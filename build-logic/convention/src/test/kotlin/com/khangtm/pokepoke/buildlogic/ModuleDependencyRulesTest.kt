@@ -47,7 +47,7 @@ class ModuleDependencyRulesTest {
 
     @Test
     fun `core testing must not depend on impl`() {
-        assertEquals(1, violations(":core:testing", ":core:network:impl").size)
+        assertEquals(1, violations(":core:testing", ":core:storage:impl").size)
     }
 
     @Test
@@ -70,8 +70,8 @@ class ModuleDependencyRulesTest {
 
     @Test
     fun `coverage threshold applies to the expected modules only`() {
-        val required = listOf(":core:common-kotlin", ":core:common-android", ":core:network:impl", ":data:pokemon:impl", ":feature:home:impl", ":debugtool")
-        val notRequired = listOf(":core:designsystem", ":core:network:api", ":feature:home:api", ":core:testing", ":app")
+        val required = listOf(":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity", ":core:storage:impl", ":data:pokemon:impl", ":feature:home:impl", ":debugtool")
+        val notRequired = listOf(":core:designsystem", ":core:storage:api", ":feature:home:api", ":core:testing", ":app")
         required.forEach { assertTrue(it, KoverConventionPlugin.requiresCoverageThreshold(it)) }
         notRequired.forEach { assertTrue(it, !KoverConventionPlugin.requiresCoverageThreshold(it)) }
     }

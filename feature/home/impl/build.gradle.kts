@@ -11,8 +11,8 @@ dependencies {
     implementation(projects.feature.home.api)
     implementation(projects.data.pokemon.api)
     implementation(projects.feature.details.api)
-    implementation(projects.core.network.api)
-    implementation(libs.retrofit)
+    implementation(projects.core.network)
+    implementation(projects.core.connectivity)
     implementation(projects.core.deeplink.api)
     testImplementation(libs.okhttp.mockwebserver)
 }

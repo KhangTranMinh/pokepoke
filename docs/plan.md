@@ -107,8 +107,9 @@ versionCode=12
 :core:common-android             ← AppInfoImpl + Hilt module (dispatchers, ApplicationScope); chỉ :app phụ thuộc
 :core:designsystem                ← theme, màu, typography, component dùng chung
 :core:ui                          ← composable dùng chung (RemoteImage, loading/error/empty state, adaptive layout)
-:core:network:api / :impl         ← api (Kotlin thuần, không Retrofit/OkHttp): NetworkMonitor, ApiServiceFactory, @BaseUrl, toNetworkDataError;
-                                    impl (duy nhất dùng Retrofit/OkHttp): HttpClient, chuẩn hóa lỗi HTTP (base URL do :app cấp), JSON, NetworkMonitor, hook Set<Interceptor>
+:core:network                    ← (không tách api/impl) HttpClient, JSON, mapping lỗi, hook Set<Interceptor>; public: ApiServiceFactory,
+                                    @BaseUrl, @AppInterceptors, toNetworkDataError; cài đặt internal; base URL do :app cấp
+:core:connectivity                ← NetworkMonitor (trạng thái kết nối); tách riêng để module chỉ cần mạng không kéo Retrofit
 :core:storage:api / :impl         ← key-value store generic (DataStore)
 :core:securestorage:api / :impl   ← lưu/đọc có mã hóa, generic
 :core:navigation:api / :impl      ← NavKey, Navigator, contract entry/interceptor/tab
@@ -163,15 +164,16 @@ Phụ thuộc giữa các feature:
 |---|---|---|
 | `core:storage` | Key-value store generic | Flag onboarding → `onboarding:impl` |
 | `core:securestorage` | Lưu/đọc có mã hóa | Token → `auth:impl` |
-| `core:network` | HttpClient, JSON, mapping lỗi, `NetworkMonitor`, hook interceptor | Base URL → `:app`; endpoint, DTO → feature gọi API; network log → `debugtool` |
+| `core:network` | HttpClient, JSON, mapping lỗi, hook interceptor | Base URL → `:app`; endpoint, DTO → feature gọi API; network log → `debugtool` |
 | `core:ui` | `RemoteImage` (bọc Coil) | Cấu hình `ImageLoader` → `:app`; URL ảnh Pokémon → `data:pokemon` |
 | *(không có `core:database`)* | — | Room yêu cầu mọi entity trong một class `@Database` → DB chung buộc core biết entity. Mỗi module có DB riêng, dùng chung cấu hình qua plugin `pokepoke.room` |
 | *(không có `core:locale`)* | — | Xem mục 9 |
 
 ### 4.3. Core tách `api` / `impl` (đã chốt)
 
-- **Tách** cho core có implementation thay được: `network`, `storage`, `securestorage`, `navigation`, `deeplink`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
-- **Kotlin/JVM thuần** cho `network:api`, `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `navigation:api` / `deeplink:api` giữ Android library (xem build.md §3).
+- **Tách** cho core có implementation thay được hoặc cần contract trung lập: `storage`, `securestorage`, `navigation`, `deeplink`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
+- **Không tách** `network` và `connectivity`: mọi module dùng network đều cần Retrofit / OkHttp nên `:api` thuần không che được gì; cài đặt đã `internal`. Tách sau nếu có nhiều implementation (giữ nguyên package, feature chỉ đổi dòng dependency).
+- **Kotlin/JVM thuần** cho `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `navigation:api` / `deeplink:api` giữ Android library (xem build.md §3).
 - **Không tách** `api`/`impl` cho `designsystem`, `ui`, `testing`; `common` tách theo nền tảng (`kotlin` / `android`) — code UI / tiện ích thuần, tách ra chỉ thêm module rỗng.
 
 ## 5. Dữ liệu: business model & single source of truth
@@ -214,7 +216,7 @@ load():
 
 - **Chỉ bắt đầu collect Flow từ storage sau khi fetch xong / xác nhận offline**, nên lần emit đầu tiên đã là dữ liệu cuối cùng. Sau đó vẫn tiếp tục observe storage để nhận thay đổi thật (vd. favourite đổi).
 - Dùng cache do offline → `UiState` có cờ `isOffline` để hiện banner nhỏ "đang xem dữ liệu đã lưu".
-- `NetworkMonitor` (trong `core:network:api`): `isOnline: Flow<Boolean>` dựa trên `ConnectivityManager`. Fake trong `testFixtures`.
+- `NetworkMonitor` (trong `core:connectivity`): `isOnline: Flow<Boolean>` dựa trên `ConnectivityManager`. Fake trong `testFixtures`.
 - Logic này viết một lần dạng helper generic trong `core:common-kotlin` (`runNetworkFirst`, `networkFirst`), **use case** gọi helper và truyền lambda. Unit test riêng cho helper.
 
 ### 5.3. URL ảnh: `PokemonImageUrls.kt`
@@ -378,15 +380,15 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
 
 | Tính năng | Cách lấy dữ liệu (generic, không biết feature) |
 |---|---|
-| **Network log** — request/response, header, body, thời gian, status | Đóng góp một OkHttp `Interceptor` vào hook `Set<Interceptor>` của `core:network:impl`; lưu ring buffer trong bộ nhớ (vd. 500 request gần nhất) |
+| **Network log** — request/response, header, body, thời gian, status | Đóng góp một OkHttp `Interceptor` vào hook `Set<Interceptor>` của `core:network`; lưu ring buffer trong bộ nhớ (vd. 500 request gần nhất) |
 | **Local DB** — liệt kê DB, bảng, xem dữ liệu, tìm kiếm / chạy câu `SELECT` | Duyệt `context.databaseList()`, mở **read-only** bằng `SQLiteDatabase`; đọc schema từ `sqlite_master` → không cần biết entity của feature |
 | **Local storage** — xem key/value | Hàm generic `observeAll()` trong `core:storage:api`; `core:securestorage` chỉ hiện key, value bị che (bấm để hiện) |
 
 ### 8.2. Độc lập & chỉ debug
 
 - `:app` khai báo `debugImplementation(projects.debugtool)` — release build không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này.
-- **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `network:api`, `storage:api`, `securestorage:api`).
-- Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng (khai báo `@Multibinds` trong `core:network:impl`).
+- **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `network`, `storage:api`, `securestorage:api`).
+- Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng (khai báo `@Multibinds` trong `core:network`).
 - **Một module duy nhất, không tách `api`/`impl`**: không ai gọi vào debugtool nên không có contract để public.
 - **Điểm vào: nút con bọ 🐞 overlay trên mọi activity**
   - Debugtool tự đăng ký `ActivityLifecycleCallbacks` qua `androidx.startup` `Initializer` khai báo trong manifest của debugtool (chỉ được merge ở debug) → `:app` không phải gọi gì.
@@ -416,7 +418,7 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 
 - Mỗi module (core, data, feature, debugtool) có `src/test` riêng, và `src/androidTest` khi cần. **Không** có module chứa test của module khác.
 - `:core:testing` chỉ là thư viện tiện ích: `MainDispatcherRule`, helper Turbine / Compose test.
-- Fake của interface public nằm trong `testFixtures` của module `:api` tương ứng (vd. `FakePokemonRepository` trong `data:pokemon:api`, `FakeNetworkMonitor` trong `core:network:api`); module khác dùng qua `testImplementation(testFixtures(projects.data.pokemon.api))`.
+- Fake của interface public nằm trong `testFixtures` của module `:api` tương ứng (vd. `FakePokemonRepository` trong `data:pokemon:api`, `FakeNetworkMonitor` trong `core:connectivity`); module khác dùng qua `testImplementation(testFixtures(projects.data.pokemon.api))`.
 - Convention plugin tự thêm thư viện test theo loại module:
 
 | Loại module / layer | Loại test |

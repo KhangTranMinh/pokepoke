@@ -54,7 +54,7 @@ Screen ──UiAction──▶ ViewModel ──▶ UseCase ──▶ Repository 
 | | observe một bản ghi không tồn tại | `NotFound` | `NotFound` |
 | Khác | mọi thứ còn lại | `Unexpected(e)` | `Unknown(e)` |
 
-Network dùng `Throwable.toNetworkDataError()` (`core:network:api`). Repository gọi network thì map DTO → model **bên trong** `dataResultOf`, để lỗi map cũng thành `Network.Parse`.
+Network dùng `Throwable.toNetworkDataError()` (`core:network`). Repository gọi network thì map DTO → model **bên trong** `dataResultOf`, để lỗi map cũng thành `Network.Parse`.
 
 ## 3. Kết quả nghiệp vụ ≠ lỗi
 
