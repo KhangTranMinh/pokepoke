@@ -25,7 +25,7 @@
 - [x] **T06 — `:core:designsystem`.** Đọc designsystem.md §1. Theme, màu, type, dimens, shape, icons, mọi component + Previews.
   Test: screenshot light/dark cho từng component; UI test cho `PokeTextField` (show/hide password), `PokePrimaryButton` (loading không click được).
   DoD: `./gradlew :core:designsystem:check recordRoborazziDebug` rồi `verifyRoborazziDebug` xanh; commit ảnh.
-- [ ] **T07 — `:core:ui`.** Đọc designsystem.md §2. Test: screenshot từng composable với mọi state; `MessageEffect` gọi `onShown`; `ErrorState` đúng text theo từng `AppError`; `toUiMessage`, `toLoadState`.
+- [x] **T07 — `:core:ui`.** Đọc designsystem.md §2. Test: screenshot từng composable với mọi state; `MessageEffect` gọi `onShown`; `ErrorState` đúng text theo từng `AppError`; `toUiMessage`, `toLoadState`.
   DoD: như T06 cho `:core:ui`.
 - [ ] **T08 — `:core:network`.** Đọc contracts.md §2. Test (MockWebServer): service tạo từ `ApiServiceFactory` parse JSON (bỏ field lạ), interceptor trong set được gọi, `toNetworkDataError` cho IOException / timeout / 404 / 500 / JSON lỗi; `NetworkMonitorImpl` (Robolectric, shadow ConnectivityManager).
   DoD: `./gradlew :core:network:api:check :core:network:impl:check`.

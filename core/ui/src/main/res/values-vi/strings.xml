@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_retry">Thử lại</string>
+    <string name="ui_loading">Đang tải</string>
+    <string name="ui_offline_banner">Bạn đang offline. Đang hiển thị dữ liệu đã lưu.</string>
+    <string name="ui_load_more_error">Không tải thêm được.</string>
+
+    <string name="ui_error_no_connection_title">Không có kết nối</string>
+    <string name="ui_error_no_connection_message">Kiểm tra kết nối mạng và thử lại.</string>
+    <string name="ui_error_not_found_title">Không tìm thấy</string>
+    <string name="ui_error_not_found_message">Dữ liệu bạn tìm không tồn tại.</string>
+    <string name="ui_error_server_title">Lỗi máy chủ</string>
+    <string name="ui_error_server_message">Máy chủ gặp sự cố (%1$d).</string>
+    <string name="ui_error_unknown_title">Đã xảy ra lỗi</string>
+    <string name="ui_error_unknown_message">Vui lòng thử lại.</string>
+</resources>
