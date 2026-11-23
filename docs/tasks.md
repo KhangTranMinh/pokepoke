@@ -32,7 +32,7 @@
   DoD: `./gradlew :translation:check :core:designsystem:check :core:ui:check verifyRoborazziDebug assembleDebug assembleRelease` xanh.
 - [x] **T08 — `:core:network` + `:core:connectivity` (gộp, không tách api/impl).** Đọc contracts.md §2. Test (MockWebServer): service tạo từ `ApiServiceFactory` parse JSON (bỏ field lạ), interceptor trong set được gọi, `toNetworkDataError` cho IOException / timeout / 404 / 500 / JSON lỗi; `NetworkMonitorImpl` (Robolectric, shadow ConnectivityManager).
   DoD: `./gradlew :core:network:check :core:connectivity:check`.
-- [ ] **T09 — `:core:storage`.** Đọc contracts.md §3. Test (Robolectric, file tạm): put/observe từng kiểu, remove, clear, `observeAll`, cùng name trả cùng instance, `storeNames` bỏ file `secure_`. Fake trong testFixtures + test cho fake.
+- [x] **T09 — `:core:storage`.** Đọc contracts.md §3. Test (Robolectric, file tạm): put/observe từng kiểu, remove, clear, `observeAll`, cùng name trả cùng instance, `storeNames` bỏ file `secure_`. Fake trong testFixtures + test cho fake.
   DoD: `./gradlew :core:storage:api:check :core:storage:impl:check`.
 - [ ] **T10 — `:core:securestorage`.** Đọc contracts.md §4. Test với `AeadProvider` cleartext: round-trip, dữ liệu trên disk không chứa plaintext, đổi key (associated data) không giải mã được, `observeKeys`.
   DoD: `./gradlew :core:securestorage:api:check :core:securestorage:impl:check`.

@@ -11,4 +11,5 @@ dependencies {
     implementation(projects.core.storage.api)
     implementation(projects.core.commonKotlin)
     implementation(libs.androidx.datastore.preferences)
+    testImplementation(testFixtures(projects.core.storage.api))
 }
