@@ -1,4 +1,4 @@
-package com.khangtm.pokepoke.core.network.api
+package com.khangtm.pokepoke.core.network.retrofit
 
 import com.khangtm.pokepoke.core.common.DataError
 import kotlinx.serialization.SerializationException

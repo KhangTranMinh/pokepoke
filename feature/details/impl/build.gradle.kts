@@ -13,6 +13,7 @@ dependencies {
     implementation(projects.feature.favourite.api)
     implementation(projects.feature.home.api)
     implementation(projects.core.network.api)
+    implementation(projects.core.network.retrofit)
     implementation(projects.core.deeplink.api)
     testImplementation(libs.okhttp.mockwebserver)
 }

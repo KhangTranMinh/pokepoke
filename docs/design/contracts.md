@@ -10,7 +10,7 @@
 
 - `:core:common-kotlin` (Kotlin/JVM thuần, package `com.khangtm.pokepoke.core.common`): mọi type bên dưới trừ phần Hilt. Mọi module khác chỉ phụ thuộc module này.
 - `:core:common-android` (Android library, package `com.khangtm.pokepoke.core.common.android`): `AppInfoImpl` (đọc `PackageManager`) và Hilt module cung cấp dispatchers, `@ApplicationScope`, binding `AppInfo`. Chỉ `:app` phụ thuộc để Hilt gom binding.
-- `:core:network:api`, `:core:storage:api`, `:core:securestorage:api`, `:data:pokemon:api` cũng là Kotlin/JVM thuần (không có `@Inject` class, không có Hilt module).
+- `:core:network:api`, `:core:network:retrofit`, `:core:storage:api`, `:core:securestorage:api`, `:data:pokemon:api` cũng là Kotlin/JVM thuần (không có `@Inject` class, không có Hilt module).
 
 Kiểu kết quả của từng layer (luật dùng: [layers.md](layers.md)).
 
@@ -115,7 +115,9 @@ interface AppInfo { val version: AppVersion }   // impl đọc PackageManager; H
 
 `LoadState` (trạng thái hiển thị Loading / Content / Error) là kiểu của UI → nằm ở `core:ui` (designsystem.md §2).
 
-## 2. `:core:network:api`
+## 2. `:core:network:api` và `:core:network:retrofit`
+
+`:core:network:api` là Kotlin/JVM thuần: **không** phụ thuộc Retrofit / OkHttp. Chỉ `:core:network:impl`, các feature gọi API (`home`, `details`, qua `:core:network:retrofit`) và `:debugtool` (OkHttp `Interceptor`) tự khai báo thư viện HTTP.
 
 ```kotlin
 package com.khangtm.pokepoke.core.network.api
@@ -136,16 +138,22 @@ interface ApiServiceFactory {
 }
 inline fun <reified T : Any> ApiServiceFactory.create(): T = create(T::class.java)
 
+```
+
+- testFixtures: `FakeNetworkMonitor(var online: Boolean = true)`.
+
+**`:core:network:retrofit`** (Kotlin/JVM, package `com.khangtm.pokepoke.core.network.retrofit`, `api(retrofit)`): helper cần kiểu Retrofit, dùng cho Repository của feature gọi API.
+
+```kotlin
 /** Dùng trong Repository gọi Retrofit: dataResultOf(Throwable::toNetworkDataError) { api.xxx() }.
  *  SocketTimeoutException → Network.Timeout; IOException khác → Network.NoConnection; HttpException 404 → NotFound;
  *  HttpException khác → Network.Http(code); SerializationException, IllegalArgumentException → Network.Parse(e); còn lại → Unexpected(e). */
 fun Throwable.toNetworkDataError(): DataError
 ```
 
-- Module api khai báo `api(retrofit)` và `api(okhttp)` để feature dùng annotation Retrofit / `Interceptor`.
-- testFixtures: `FakeNetworkMonitor(var online: Boolean = true)`.
+Feature gọi API khai báo `implementation(projects.core.network.api)` + `implementation(projects.core.network.retrofit)`. Muốn OkHttp (`Interceptor`) thì tự khai báo `libs.okhttp`.
 
-**`:core:network:impl`**: OkHttpClient (connect 10s, read 15s, các interceptor từ `@AppInterceptors Set<Interceptor>`), `Json { ignoreUnknownKeys = true; explicitNulls = false; coerceInputValues = true }`, Retrofit với `asConverterFactory("application/json".toMediaType())`, `NetworkMonitorImpl` (ConnectivityManager callback → `StateFlow`), `@Multibinds @AppInterceptors abstract fun interceptors(): Set<Interceptor>`.
+**`:core:network:impl`** (tự khai báo `retrofit`, `okhttp`, converter kotlinx-serialization): OkHttpClient (connect 10s, read 15s, các interceptor từ `@AppInterceptors Set<Interceptor>`), `Json { ignoreUnknownKeys = true; explicitNulls = false; coerceInputValues = true }`, Retrofit với `asConverterFactory("application/json".toMediaType())`, `NetworkMonitorImpl` (ConnectivityManager callback → `StateFlow`), `@Multibinds @AppInterceptors abstract fun interceptors(): Set<Interceptor>`.
 
 ## 3. `:core:storage:api`
 

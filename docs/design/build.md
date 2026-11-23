@@ -149,7 +149,7 @@ include(":app", ":debugtool", ":core:common-kotlin", ":core:common-android", ...
 Ghi chú:
 - AGP 9 built-in Kotlin: **không** apply `org.jetbrains.kotlin.android`.
 - Nếu `testFixtures` Kotlin cần cờ: thêm `android.experimental.enableTestFixturesKotlinSupport=true` vào `gradle.properties`.
-- Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:network:api`, `core:storage:api`, `core:securestorage:api`, `data:pokemon:api`, `core:common-kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
+- Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:network:api`, `core:network:retrofit`, `core:storage:api`, `core:securestorage:api`, `data:pokemon:api`, `core:common-kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
 - Giữ Android library cho `core:navigation:api` (`@StringRes`, `ImageVector`, Compose), `core:deeplink:api` (`PendingIntent`, phụ thuộc `navigation:api`) và `feature:*:api`.
 
 ## 4. `version.properties`

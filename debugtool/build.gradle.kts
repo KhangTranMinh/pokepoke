@@ -13,6 +13,7 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.core.commonKotlin)
     implementation(projects.core.network.api)
+    implementation(libs.okhttp)
     implementation(projects.core.storage.api)
     implementation(projects.core.securestorage.api)
     implementation(libs.androidx.startup)

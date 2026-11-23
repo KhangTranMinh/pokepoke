@@ -35,6 +35,7 @@ include(
     ":core:ui",
     ":core:network:api",
     ":core:network:impl",
+    ":core:network:retrofit",
     ":core:storage:api",
     ":core:storage:impl",
     ":core:securestorage:api",

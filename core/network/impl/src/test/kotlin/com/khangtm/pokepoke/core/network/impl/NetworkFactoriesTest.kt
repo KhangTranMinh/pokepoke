@@ -4,7 +4,7 @@ import com.khangtm.pokepoke.core.common.DataError
 import com.khangtm.pokepoke.core.common.DataResult
 import com.khangtm.pokepoke.core.common.dataResultOf
 import com.khangtm.pokepoke.core.network.api.create
-import com.khangtm.pokepoke.core.network.api.toNetworkDataError
+import com.khangtm.pokepoke.core.network.retrofit.toNetworkDataError
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import mockwebserver3.MockResponse
