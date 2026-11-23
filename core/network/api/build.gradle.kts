@@ -8,4 +8,5 @@ dependencies {
     api(libs.okhttp)
     api(libs.kotlinx.coroutines.core)
     api(libs.javax.inject)
+    implementation(libs.kotlinx.serialization.json)
 }
