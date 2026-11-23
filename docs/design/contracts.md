@@ -1,12 +1,16 @@
 # Contracts giữa các module
 
-> **Nguồn chuẩn** cho mọi type public trong module `:api` và module không tách (`core:common`, `core:ui`...). Implement đúng tên, package, chữ ký. Được phép thêm member `internal`/`private`; **không** đổi chữ ký public mà không ghi vào [`docs/decisions.md`](../decisions.md).
+> **Nguồn chuẩn** cho mọi type public trong module `:api` và module không tách (`core:common:kotlin`, `core:ui`...). Implement đúng tên, package, chữ ký. Được phép thêm member `internal`/`private`; **không** đổi chữ ký public mà không ghi vào [`docs/decisions.md`](../decisions.md).
 >
 > Quy ước package = namespace module: `com.khangtm.pokepoke.<nhóm>.<tên>[.api|.impl]`. Ví dụ `:core:navigation:api` → `com.khangtm.pokepoke.core.navigation.api`.
 
 ---
 
-## 1. `:core:common`
+## 1. `:core:common:kotlin` và `:core:common:android`
+
+- `:core:common:kotlin` (Kotlin/JVM thuần, package `com.khangtm.pokepoke.core.common`): mọi type bên dưới trừ phần Hilt. Mọi module khác chỉ phụ thuộc module này.
+- `:core:common:android` (Android library, package `com.khangtm.pokepoke.core.common.android`): `AppInfoImpl` (đọc `PackageManager`) và Hilt module cung cấp dispatchers, `@ApplicationScope`, binding `AppInfo`. Chỉ `:app` phụ thuộc để Hilt gom binding.
+- `:core:network:api`, `:core:storage:api`, `:core:securestorage:api`, `:data:pokemon:api` cũng là Kotlin/JVM thuần (không có `@Inject` class, không có Hilt module).
 
 Kiểu kết quả của từng layer (luật dùng: [layers.md](layers.md)).
 
@@ -101,12 +105,12 @@ fun <T> networkFirst(
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class IoDispatcher
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class DefaultDispatcher
 @Qualifier @Retention(AnnotationRetention.BINARY) annotation class ApplicationScope   // CoroutineScope sống theo app
-// Hilt module trong core:common cung cấp: @IoDispatcher Dispatchers.IO, @DefaultDispatcher Dispatchers.Default,
+// Hilt module trong core:common:android cung cấp: @IoDispatcher Dispatchers.IO, @DefaultDispatcher Dispatchers.Default,
 // @ApplicationScope CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
 // ======== Thông tin app ========
 data class AppVersion(val name: String, val code: Long)
-interface AppInfo { val version: AppVersion }   // impl đọc PackageManager; Hilt binding trong core:common
+interface AppInfo { val version: AppVersion }   // impl đọc PackageManager; Hilt binding trong core:common:android
 ```
 
 `LoadState` (trạng thái hiển thị Loading / Content / Error) là kiểu của UI → nằm ở `core:ui` (designsystem.md §2).

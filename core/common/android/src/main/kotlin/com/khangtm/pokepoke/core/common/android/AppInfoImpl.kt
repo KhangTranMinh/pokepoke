@@ -1,6 +1,8 @@
-package com.khangtm.pokepoke.core.common
+package com.khangtm.pokepoke.core.common.android
 
 import android.content.Context
+import com.khangtm.pokepoke.core.common.AppInfo
+import com.khangtm.pokepoke.core.common.AppVersion
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 

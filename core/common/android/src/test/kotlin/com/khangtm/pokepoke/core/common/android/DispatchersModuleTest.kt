@@ -1,6 +1,6 @@
-package com.khangtm.pokepoke.core.common
+package com.khangtm.pokepoke.core.common.android
 
-import com.khangtm.pokepoke.core.common.di.CommonModule
+import com.khangtm.pokepoke.core.common.android.di.CommonModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async

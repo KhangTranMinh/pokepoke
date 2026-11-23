@@ -1,5 +1,6 @@
-package com.khangtm.pokepoke.core.common
+package com.khangtm.pokepoke.core.common.android
 
+import com.khangtm.pokepoke.core.common.AppVersion
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

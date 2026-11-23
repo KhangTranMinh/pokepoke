@@ -4,10 +4,10 @@ plugins {
 }
 
 android {
-    namespace = "com.khangtm.pokepoke.core.common"
+    namespace = "com.khangtm.pokepoke.core.common.android"
 }
 
 dependencies {
-    api(libs.kotlinx.coroutines.core)
+    implementation(projects.core.common.kotlin)
     implementation(libs.kotlinx.coroutines.android)
 }

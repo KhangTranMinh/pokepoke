@@ -11,7 +11,7 @@ class ModuleDependencyRulesTest {
 
     @Test
     fun `app may depend on impl and debugtool`() {
-        assertTrue(violations(":app", ":feature:home:impl", ":debugtool", ":core:common").isEmpty())
+        assertTrue(violations(":app", ":feature:home:impl", ":debugtool", ":core:common:kotlin").isEmpty())
     }
 
     @Test
@@ -30,7 +30,7 @@ class ModuleDependencyRulesTest {
     @Test
     fun `core must not depend on data or feature`() {
         assertEquals(2, violations(":core:ui", ":data:pokemon:api", ":feature:home:api").size)
-        assertTrue(violations(":core:ui", ":core:designsystem", ":core:common").isEmpty())
+        assertTrue(violations(":core:ui", ":core:designsystem", ":core:common:kotlin").isEmpty())
     }
 
     @Test
@@ -42,7 +42,7 @@ class ModuleDependencyRulesTest {
     @Test
     fun `debugtool must not depend on data or feature`() {
         assertEquals(2, violations(":debugtool", ":data:pokemon:api", ":feature:home:api").size)
-        assertTrue(violations(":debugtool", ":core:common").isEmpty())
+        assertTrue(violations(":debugtool", ":core:common:kotlin").isEmpty())
     }
 
     @Test
@@ -57,7 +57,7 @@ class ModuleDependencyRulesTest {
 
     @Test
     fun `coverage threshold applies to the expected modules only`() {
-        val required = listOf(":core:common", ":core:network:impl", ":data:pokemon:impl", ":feature:home:impl", ":debugtool")
+        val required = listOf(":core:common:kotlin", ":core:common:android", ":core:network:impl", ":data:pokemon:impl", ":feature:home:impl", ":debugtool")
         val notRequired = listOf(":core:designsystem", ":core:network:api", ":feature:home:api", ":core:testing", ":app")
         required.forEach { assertTrue(it, KoverConventionPlugin.requiresCoverageThreshold(it)) }
         notRequired.forEach { assertTrue(it, !KoverConventionPlugin.requiresCoverageThreshold(it)) }

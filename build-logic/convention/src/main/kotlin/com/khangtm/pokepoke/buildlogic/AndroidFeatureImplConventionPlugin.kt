@@ -13,7 +13,7 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
             listOf(
                 ":core:designsystem",
                 ":core:ui",
-                ":core:common",
+                ":core:common:kotlin",
                 ":core:navigation:api",
             ).forEach { dependencies.add("implementation", project(it)) }
             listOf(

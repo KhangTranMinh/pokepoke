@@ -8,6 +8,7 @@ import org.gradle.kotlin.dsl.withType
 class JvmLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.jvm")
+        pluginManager.apply("java-test-fixtures")
         pluginManager.apply("pokepoke.kover")
 
         configureJvmToolchain()

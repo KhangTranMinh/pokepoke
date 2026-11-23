@@ -9,7 +9,7 @@ android {
 
 dependencies {
     implementation(projects.core.securestorage.api)
-    implementation(projects.core.common)
+    implementation(projects.core.common.kotlin)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.tink.android)
 }

@@ -9,6 +9,6 @@ android {
 
 dependencies {
     implementation(projects.core.navigation.api)
-    implementation(projects.core.common)
+    implementation(projects.core.common.kotlin)
     implementation(libs.kotlinx.coroutines.android)
 }

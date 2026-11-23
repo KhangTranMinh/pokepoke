@@ -1,13 +1,8 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-}
-
-android {
-    namespace = "com.khangtm.pokepoke.core.securestorage.api"
-    testFixtures.enable = true
+    alias(libs.plugins.pokepoke.jvm.library)
 }
 
 dependencies {
-    api(projects.core.common)
+    api(projects.core.common.kotlin)
     api(libs.kotlinx.coroutines.core)
 }

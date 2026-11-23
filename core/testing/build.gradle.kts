@@ -9,7 +9,7 @@ android {
 
 dependencies {
     api(platform(libs.androidx.compose.bom))
-    api(projects.core.common)
+    api(projects.core.common.kotlin)
     api(libs.junit)
     api(libs.kotlinx.coroutines.test)
     api(libs.androidx.compose.ui.test.junit4)

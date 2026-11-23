@@ -1,15 +1,11 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-}
-
-android {
-    namespace = "com.khangtm.pokepoke.core.network.api"
-    testFixtures.enable = true
+    alias(libs.plugins.pokepoke.jvm.library)
 }
 
 dependencies {
-    api(projects.core.common)
+    api(projects.core.common.kotlin)
     api(libs.retrofit)
     api(libs.okhttp)
     api(libs.kotlinx.coroutines.core)
+    api(libs.javax.inject)
 }

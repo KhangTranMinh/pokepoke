@@ -14,7 +14,8 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.common)
+    implementation(projects.core.common.kotlin)
+    implementation(projects.core.common.android)
     implementation(projects.core.designsystem)
     implementation(projects.core.ui)
     implementation(projects.core.network.api)

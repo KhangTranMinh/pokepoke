@@ -13,7 +13,7 @@ class AndroidFeatureApiConventionPlugin : Plugin<Project> {
             extensions.configure<LibraryExtension> {
                 testFixtures.enable = true
             }
-            dependencies.add("api", project(":core:common"))
+            dependencies.add("api", project(":core:common:kotlin"))
             dependencies.add("api", project(":core:navigation:api"))
             addDep("implementation", "kotlinx-coroutines-core")
         }

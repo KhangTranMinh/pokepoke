@@ -1,7 +1,7 @@
-package com.khangtm.pokepoke.core.common.di
+package com.khangtm.pokepoke.core.common.android.di
 
 import com.khangtm.pokepoke.core.common.AppInfo
-import com.khangtm.pokepoke.core.common.AppInfoImpl
+import com.khangtm.pokepoke.core.common.android.AppInfoImpl
 import com.khangtm.pokepoke.core.common.ApplicationScope
 import com.khangtm.pokepoke.core.common.DefaultDispatcher
 import com.khangtm.pokepoke.core.common.IoDispatcher
