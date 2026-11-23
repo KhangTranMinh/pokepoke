@@ -1,0 +1,45 @@
+# --- Gradle / Kotlin ---
+.gradle/
+build/
+.kotlin/
+.externalNativeBuild/
+.cxx/
+
+# --- Local config ---
+local.properties
+
+# --- Android Studio / IntelliJ ---
+*.iml
+.idea/*
+!.idea/codeStyles/
+!.idea/runConfigurations/
+captures/
+.navigation/
+
+# --- Build outputs ---
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# --- Signing ---
+*.jks
+*.keystore
+keystore.properties
+
+# --- Logs / profiling ---
+*.log
+*.hprof
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Claude Code local settings ---
+.claude/settings.local.json
+
+# --- Credentials (never commit) ---
+/configs/credentials/
+.env
+*.env
