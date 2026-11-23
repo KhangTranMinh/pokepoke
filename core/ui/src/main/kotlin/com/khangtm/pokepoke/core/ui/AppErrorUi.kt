@@ -2,6 +2,7 @@ package com.khangtm.pokepoke.core.ui
 
 import androidx.annotation.StringRes
 import com.khangtm.pokepoke.core.common.AppError
+import com.khangtm.pokepoke.translation.R
 
 @StringRes
 fun AppError.titleRes(): Int = when (this) {

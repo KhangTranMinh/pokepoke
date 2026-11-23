@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- designsystem_ -->
+    <string name="designsystem_back">Back</string>
+    <string name="designsystem_clear">Clear</string>
+    <string name="designsystem_cancel">Cancel</string>
+    <string name="designsystem_loading">Loading</string>
+    <string name="designsystem_show_password">Show password</string>
+    <string name="designsystem_hide_password">Hide password</string>
+
+    <!-- ui_ -->
     <string name="ui_retry">Retry</string>
     <string name="ui_loading">Loading</string>
     <string name="ui_offline_banner">You\'re offline. Showing saved data.</string>

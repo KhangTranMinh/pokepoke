@@ -10,5 +10,6 @@ android {
 dependencies {
     api(projects.core.commonKotlin)
     implementation(projects.core.designsystem)
+    implementation(projects.translation)
     implementation(libs.coil.compose)
 }

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- designsystem_ -->
+    <string name="designsystem_back">Quay lại</string>
+    <string name="designsystem_clear">Xóa</string>
+    <string name="designsystem_cancel">Hủy</string>
+    <string name="designsystem_loading">Đang tải</string>
+    <string name="designsystem_show_password">Hiện mật khẩu</string>
+    <string name="designsystem_hide_password">Ẩn mật khẩu</string>
+
+    <!-- ui_ -->
     <string name="ui_retry">Thử lại</string>
     <string name="ui_loading">Đang tải</string>
     <string name="ui_offline_banner">Bạn đang offline. Đang hiển thị dữ liệu đã lưu.</string>

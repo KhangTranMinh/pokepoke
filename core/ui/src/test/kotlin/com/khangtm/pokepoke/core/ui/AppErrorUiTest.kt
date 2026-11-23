@@ -3,6 +3,7 @@ package com.khangtm.pokepoke.core.ui
 import com.khangtm.pokepoke.core.common.AppError
 import com.khangtm.pokepoke.core.common.AppResult
 import com.khangtm.pokepoke.core.common.DataSnapshot
+import com.khangtm.pokepoke.translation.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

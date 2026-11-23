@@ -26,7 +26,8 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             addDep("testImplementation", "kotlinx-coroutines-test")
             addDep("testImplementation", "robolectric")
             addDep("testImplementation", "androidx-test-junit")
-            if (path != ":core:testing") {
+            // :core:testing is the test toolkit itself; :translation must not depend on any module.
+            if (path != ":core:testing" && path != ":translation") {
                 dependencies.add("testImplementation", project(":core:testing"))
             }
         }

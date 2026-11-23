@@ -15,6 +15,7 @@ android {
 
 dependencies {
     implementation(projects.core.commonKotlin)
+    implementation(projects.translation)
     implementation(projects.core.commonAndroid)
     implementation(projects.core.designsystem)
     implementation(projects.core.ui)

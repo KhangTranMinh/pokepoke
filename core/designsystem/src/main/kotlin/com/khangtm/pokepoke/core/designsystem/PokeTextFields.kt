@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import com.khangtm.pokepoke.translation.R
 
 /** Single-line outlined field. [isPassword] masks the text and adds a show / hide toggle. */
 @Suppress("DEPRECATION") // PasswordVisualTransformation: SecureTextField uses TextFieldState, not (value, onValueChange)

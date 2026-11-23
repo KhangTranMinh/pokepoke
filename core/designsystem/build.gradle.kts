@@ -6,3 +6,7 @@ plugins {
 android {
     namespace = "com.khangtm.pokepoke.core.designsystem"
 }
+
+dependencies {
+    implementation(projects.translation)
+}

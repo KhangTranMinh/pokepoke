@@ -15,6 +15,7 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
                 ":core:ui",
                 ":core:common-kotlin",
                 ":core:navigation:api",
+                ":translation",
             ).forEach { dependencies.add("implementation", project(it)) }
             listOf(
                 "androidx-lifecycle-runtime-compose",

@@ -51,6 +51,19 @@ class ModuleDependencyRulesTest {
     }
 
     @Test
+    fun `translation must not depend on any module`() {
+        assertEquals(2, violations(":translation", ":core:common-kotlin", ":feature:home:api").size)
+        assertTrue(violations(":translation").isEmpty())
+    }
+
+    @Test
+    fun `every module may depend on translation`() {
+        listOf(":app", ":core:ui", ":core:designsystem", ":data:pokemon:impl", ":feature:home:impl", ":debugtool").forEach {
+            assertTrue(it, violations(it, ":translation").isEmpty())
+        }
+    }
+
+    @Test
     fun `impl may depend on its own api`() {
         assertTrue(violations(":feature:home:impl", ":feature:home:api", ":data:pokemon:api").isEmpty())
     }

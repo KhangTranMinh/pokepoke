@@ -19,6 +19,8 @@ internal object ModuleDependencyRules {
     }
 
     private fun reasonForbidden(module: String, dependency: String): String? {
+        if (module == ":translation") return ":translation (resources only) must not depend on any module"
+        // Every other module may depend on :translation.
         if (module != ":app") {
             if (isImpl(dependency)) return "only :app may depend on :impl modules"
             if (isDebugTool(dependency)) return "only :app may depend on :debugtool"

@@ -27,6 +27,7 @@ dependencyResolutionManagement {
 rootProject.name = "PokePoke"
 include(
     ":app",
+    ":translation",
     ":core:testing",
     ":core:common-kotlin",
     ":core:common-android",

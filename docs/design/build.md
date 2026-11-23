@@ -139,7 +139,7 @@ include(":app", ":debugtool", ":core:common-kotlin", ":core:common-android", ...
 | `pokepoke.android.library` | `AndroidLibraryConventionPlugin` | `com.android.library`; SDK; `jvmToolchain(jvm)`; `testOptions.unitTests.isIncludeAndroidResources = true`; test deps chung (junit, mockk, turbine, coroutines-test, robolectric, androidx-test-junit, `testImplementation(project(":core:testing"))` trừ chính `:core:testing`); áp dụng `pokepoke.kover`; task `verifyModuleDependencies` (mục 5) |
 | `pokepoke.android.compose` | `AndroidComposeConventionPlugin` | `org.jetbrains.kotlin.plugin.compose`; `buildFeatures.compose = true`; BOM cho implementation/testImplementation/androidTestImplementation; ui, ui-graphics, foundation, material3, material-icons-core, ui-tooling-preview; `debugImplementation` ui-tooling, ui-test-manifest; `testImplementation` ui-test-junit4; Roborazzi plugin + roborazzi, roborazzi-compose, roborazzi-junit-rule; `roborazzi { outputDir = file("src/test/screenshots") }` |
 | `pokepoke.android.feature.api` | `AndroidFeatureApiConventionPlugin` | `pokepoke.android.library`; `android.testFixtures.enable = true`; `api(core:common-kotlin)`, `api(core:navigation:api)`; `kotlinx-coroutines-core` |
-| `pokepoke.android.feature.impl` | `AndroidFeatureImplConventionPlugin` | `pokepoke.android.library` + `pokepoke.android.compose` + `pokepoke.hilt`; `implementation` core:designsystem, core:ui, core:common-kotlin, core:navigation:api, lifecycle-runtime-compose, lifecycle-viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive, material3-adaptive-layout, material3-adaptive-navigation3; `testImplementation(testFixtures(core:navigation:api))` |
+| `pokepoke.android.feature.impl` | `AndroidFeatureImplConventionPlugin` | `pokepoke.android.library` + `pokepoke.android.compose` + `pokepoke.hilt`; `implementation` core:designsystem, core:ui, core:common-kotlin, core:navigation:api, translation, lifecycle-runtime-compose, lifecycle-viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive, material3-adaptive-layout, material3-adaptive-navigation3; `testImplementation(testFixtures(core:navigation:api))` |
 | `pokepoke.hilt` | `HiltConventionPlugin` | `com.google.devtools.ksp` + `com.google.dagger.hilt.android`; `implementation` hilt-android; `ksp` hilt-compiler; `testImplementation` hilt-android-testing; `kspTest` hilt-compiler |
 | `pokepoke.room` | `RoomConventionPlugin` | `androidx.room` + ksp; `room { schemaDirectory("$projectDir/schemas") }`; room-runtime, room-ktx, `ksp` room-compiler; `testImplementation` room-testing |
 | `pokepoke.kotlin.serialization` | `KotlinSerializationConventionPlugin` | `org.jetbrains.kotlin.plugin.serialization`; `implementation` kotlinx-serialization-json |
@@ -174,6 +174,7 @@ Plugin application đọc qua `providers.fileContents(rootProject.layout.project
 | `:data:*` | `:feature:*` |
 | `:debugtool` | `:data:*`, `:feature:*` |
 | `:core:testing` | `:*:impl` |
+| `:translation` | mọi module khác (chỉ chứa resource, không phụ thuộc gì; mọi module được phụ thuộc vào nó) |
 
 Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào X (áp luật bình thường).
 

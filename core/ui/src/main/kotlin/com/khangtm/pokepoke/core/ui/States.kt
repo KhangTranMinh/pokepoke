@@ -31,6 +31,7 @@ import com.khangtm.pokepoke.core.designsystem.PokeSecondaryButton
 import com.khangtm.pokepoke.core.designsystem.PokeSizes
 import com.khangtm.pokepoke.core.designsystem.PokeSpacing
 import com.khangtm.pokepoke.core.designsystem.PokeTextButton
+import com.khangtm.pokepoke.translation.R
 
 private val StateIconSize = 48.dp
 private val FooterProgressSize = 24.dp
