@@ -1,6 +1,7 @@
 [versions]
 # SDK / JVM
 compileSdk = "37"
+compileSdkMinor = "1"
 minSdk = "30"
 targetSdk = "37"
 jvm = "21"
@@ -101,6 +102,16 @@ coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref 
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
 
+# Gradle plugins used by build-logic (compileOnly)
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+hilt-gradlePlugin = { group = "com.google.dagger", name = "hilt-android-gradle-plugin", version.ref = "hilt" }
+room-gradlePlugin = { group = "androidx.room", name = "room-gradle-plugin", version.ref = "room" }
+kover-gradlePlugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
+roborazzi-gradlePlugin = { group = "io.github.takahirom.roborazzi", name = "io.github.takahirom.roborazzi.gradle.plugin", version.ref = "roborazzi" }
+
 # Test
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
@@ -123,3 +134,15 @@ hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 room = { id = "androidx.room", version.ref = "room" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+
+# Convention plugins (build-logic)
+pokepoke-android-application = { id = "pokepoke.android.application", version = "unspecified" }
+pokepoke-android-library = { id = "pokepoke.android.library", version = "unspecified" }
+pokepoke-android-compose = { id = "pokepoke.android.compose", version = "unspecified" }
+pokepoke-android-feature-api = { id = "pokepoke.android.feature.api", version = "unspecified" }
+pokepoke-android-feature-impl = { id = "pokepoke.android.feature.impl", version = "unspecified" }
+pokepoke-hilt = { id = "pokepoke.hilt", version = "unspecified" }
+pokepoke-room = { id = "pokepoke.room", version = "unspecified" }
+pokepoke-kotlin-serialization = { id = "pokepoke.kotlin.serialization", version = "unspecified" }
+pokepoke-jvm-library = { id = "pokepoke.jvm.library", version = "unspecified" }
+pokepoke-kover = { id = "pokepoke.kover", version = "unspecified" }

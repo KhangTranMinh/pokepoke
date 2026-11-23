@@ -10,7 +10,7 @@
 
 - [x] **T01 — Version catalog & toolchain.** Đọc: build.md §1, §8. Cập nhật `gradle/libs.versions.toml` (toàn bộ version + library + plugin), `gradle.properties`. Áp dụng các bước ở build.md §1.3 nếu lỗi.
   DoD: `./gradlew assembleDebug` xanh với app hiện tại (cập nhật `app/build.gradle.kts` tối thiểu để build).
-- [ ] **T02 — `build-logic` + convention plugins + `version.properties`.** Đọc: build.md §2–§7, plan.md §2–3. Tạo `build-logic`, mọi plugin trong bảng build.md §3, task `verifyModuleDependencies`, `verifyReleaseHasNoDebugTool`, `version.properties` (1.0.0 / 1). Chuyển `:app` sang `pokepoke.android.application` + compose + hilt (tạo `PokePokeApplication` rỗng `@HiltAndroidApp`).
+- [x] **T02 — `build-logic` + convention plugins + `version.properties`.** Đọc: build.md §2–§7, plan.md §2–3. Tạo `build-logic`, mọi plugin trong bảng build.md §3, task `verifyModuleDependencies`, `verifyReleaseHasNoDebugTool`, `version.properties` (1.0.0 / 1). Chuyển `:app` sang `pokepoke.android.application` + compose + hilt (tạo `PokePokeApplication` rỗng `@HiltAndroidApp`).
   DoD: `./gradlew assembleDebug assembleRelease check` xanh; APK debug có `versionName` `1.0.0-debug`, `versionCode` 1.
 - [ ] **T03 — Skeleton module.** Đọc: plan.md §4. Tạo **mọi** module (core, data, feature, debugtool) với `build.gradle.kts` dùng convention plugin đúng loại, namespace, thư mục `src/main/kotlin/<package>`, `src/test/kotlin/<package>`. Khai báo dependency giữa module đúng như contracts.md / plan.md §4.1. Thêm vào `settings.gradle.kts`.
   DoD: `./gradlew assembleDebug assembleRelease check` xanh. Kiểm tra check kiến trúc hoạt động: tạm thêm `implementation(projects.feature.home.impl)` vào `feature:details:impl` → build phải fail với message rõ ràng → gỡ ra.
