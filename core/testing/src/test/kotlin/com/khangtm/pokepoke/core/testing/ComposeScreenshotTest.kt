@@ -2,6 +2,8 @@ package com.khangtm.pokepoke.core.testing
 
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.onNodeWithText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,6 +43,23 @@ class ComposeScreenshotTest {
         }
         assertEquals(listOf(false, true), themes)
         assertEquals(listOf("sample_light.png", "sample_dark.png"), captured)
+    }
+
+    @Test
+    fun `target selects the captured node`() {
+        var verified = false
+        runComposeScreenshot(
+            "sample",
+            capturer = { node, _ ->
+                node.assertTextEquals("second")
+                verified = true
+            },
+            target = { onNodeWithText("second") },
+        ) {
+            Text("first")
+            Text("second")
+        }
+        assertTrue(verified)
     }
 
     @Test

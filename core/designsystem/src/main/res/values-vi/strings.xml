@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="designsystem_back">Quay lại</string>
+    <string name="designsystem_clear">Xóa</string>
+    <string name="designsystem_cancel">Hủy</string>
+    <string name="designsystem_loading">Đang tải</string>
+    <string name="designsystem_show_password">Hiện mật khẩu</string>
+    <string name="designsystem_hide_password">Ẩn mật khẩu</string>
+</resources>
