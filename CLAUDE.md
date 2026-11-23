@@ -10,3 +10,33 @@
   GH_TOKEN=$(grep '^GITHUB_TOKEN=' configs/credentials/.env | cut -d= -f2-) gh pr create ...
   ```
 - Không bao giờ in token ra output, commit file `.env`, hay ghi token vào file nào khác. `configs/credentials/` đã nằm trong `.gitignore`.
+
+## Implement project (dành cho agent)
+
+- **Bắt đầu từ [`docs/tasks.md`](docs/tasks.md)**: làm task đầu tiên chưa tick, theo đúng thứ tự, đủ DoD rồi mới sang task sau. Tick `[x]` và commit sau mỗi task (`T0x: <tóm tắt>`). Chỉ push khi user yêu cầu.
+- Tài liệu (thứ tự ưu tiên khi mâu thuẫn): `docs/design/contracts.md` > `docs/design/layers.md` > `docs/design/screens.md` > `docs/design/designsystem.md`, `docs/design/deeplinks.md`, `docs/design/build.md` > `docs/plan.md` > `docs/requirements.md`.
+- **Không dừng lại để hỏi.** Chỗ tài liệu chưa nói rõ: chọn phương án đơn giản nhất, nhất quán với tài liệu, rồi ghi vào `docs/decisions.md`. Lệch khỏi tài liệu (version, API thư viện khác thực tế) cũng phải ghi.
+- Version thư viện: chỉ dùng version trong `docs/design/build.md` §1; lỗi tương thích → làm theo build.md §1.3.
+- API thư viện mới (Navigation 3, Material3 Adaptive, AGP 9 DSL): khi không chắc, đọc sources jar / KDoc của version đã pin trong Gradle cache, không đoán.
+
+## Quy ước code
+
+- Package = namespace module: `com.khangtm.pokepoke.<core|data|feature>.<name>[.api|.impl]`; `:app` → `com.khangtm.pokepoke`; `:debugtool` → `com.khangtm.pokepoke.debugtool`.
+- Kotlin source ở `src/main/kotlin`, test ở `src/test/kotlin`.
+- Chỉ `:app` được phụ thuộc module `:impl` và `:debugtool` (build tự kiểm tra).
+- **Layer (bắt buộc — `docs/design/layers.md`, tự rà theo checklist §5 trước khi commit):** ViewModel chỉ inject UseCase + `Navigator` và chỉ xử lý `AppResult`; UseCase luôn trả `AppResult` / `Flow<AppResult>`; Repository luôn trả `DataResult` / `Flow<DataResult>` và là chỗ duy nhất bắt exception (qua `dataResultOf` / `asDataResult`). Không `try`/`catch` ở ViewModel / UseCase; không `runCatching`.
+- `:feature:*:api` chỉ chứa `NavKey`, use case interface (chỉ khi module khác cần), model cho use case, extension point. Repository / DAO / DTO luôn `internal` trong `:impl`.
+- Key điều hướng đặt tên `XxxNavKey` (implement `NavKey` của Navigation 3), vd. `HomeNavKey`, `DetailsNavKey(pokemonId)` — tránh nhầm với key của storage / Room / Compose `key()`.
+- Mỗi screen: `XxxUiState`, `XxxUiAction`, `XxxViewModel` (`uiState: StateFlow`, `onAction()`), `XxxRoute.kt` (chỉ root, biết ViewModel), `XxxScreen.kt` (stateless, preview được), `XxxPreviews.kt`.
+- Không hardcode string: mọi text và `contentDescription` trong `strings.xml`, có cả `values/` (en) và `values-vi/` (vi); key có tiền tố module (`home_`, `details_`...). `:debugtool` chỉ cần `values/`.
+- Không dùng `!!`; không `GlobalScope`; coroutine dùng dispatcher inject (`@IoDispatcher`).
+- Tên test: backtick mô tả hành vi, vd. ``fun `offline with cache emits content once`()``.
+
+## Lệnh
+
+| Mục đích | Lệnh |
+|---|---|
+| Build | `./gradlew assembleDebug assembleRelease` |
+| Check một module | `./gradlew :<module>:check` |
+| Ghi / kiểm tra screenshot | `./gradlew recordRoborazziDebug` / `./gradlew verifyRoborazziDebug` |
+| Toàn bộ | `./gradlew check verifyRoborazziDebug koverVerify` |
