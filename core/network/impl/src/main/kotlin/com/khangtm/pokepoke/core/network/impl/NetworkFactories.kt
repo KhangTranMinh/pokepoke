@@ -21,6 +21,8 @@ internal fun createOkHttpClient(interceptors: Set<Interceptor>): OkHttpClient =
     OkHttpClient.Builder()
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        // Outermost, so interceptors from @AppInterceptors still see non-2xx responses.
+        .addInterceptor(HttpErrorInterceptor)
         .apply { interceptors.forEach { addInterceptor(it) } }
         .build()
 

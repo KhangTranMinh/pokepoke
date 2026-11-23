@@ -4,7 +4,7 @@ import com.khangtm.pokepoke.core.common.DataError
 import com.khangtm.pokepoke.core.common.DataResult
 import com.khangtm.pokepoke.core.common.dataResultOf
 import com.khangtm.pokepoke.core.network.api.create
-import com.khangtm.pokepoke.core.network.retrofit.toNetworkDataError
+import com.khangtm.pokepoke.core.network.api.toNetworkDataError
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import mockwebserver3.MockResponse
@@ -117,11 +117,25 @@ class NetworkFactoriesTest {
     }
 
     @Test
+    fun `interceptors from the set see non-2xx responses before they become errors`() {
+        server.enqueue(json("{}", code = 404))
+        var seenCode: Int? = null
+        val logging = Interceptor { chain ->
+            chain.proceed(chain.request()).also { seenCode = it.code }
+        }
+
+        val result = call(api(setOf(logging)))
+
+        assertEquals(404, seenCode)
+        assertEquals(DataResult.Failure(DataError.NotFound), result)
+    }
+
+    @Test
     fun `client uses the documented timeouts`() {
         val client = createOkHttpClient(emptySet())
         assertEquals(10_000, client.connectTimeoutMillis)
         assertEquals(15_000, client.readTimeoutMillis)
-        assertTrue(client.interceptors.isEmpty())
+        assertEquals(listOf<Interceptor>(HttpErrorInterceptor), client.interceptors)
     }
 
     @Test

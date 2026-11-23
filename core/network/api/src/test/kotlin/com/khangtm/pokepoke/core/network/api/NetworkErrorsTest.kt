@@ -1,21 +1,16 @@
-package com.khangtm.pokepoke.core.network.retrofit
+package com.khangtm.pokepoke.core.network.api
 
 import com.khangtm.pokepoke.core.common.DataError
 import kotlinx.serialization.SerializationException
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import retrofit2.HttpException
-import retrofit2.Response
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
 class NetworkErrorsTest {
-
-    private fun http(code: Int) = HttpException(Response.error<Any>(code, "".toResponseBody(null)))
 
     @Test
     fun `SocketTimeoutException is Timeout`() {
@@ -31,14 +26,22 @@ class NetworkErrorsTest {
 
     @Test
     fun `HTTP 404 is NotFound`() {
-        assertEquals(DataError.NotFound, http(404).toNetworkDataError())
+        assertEquals(DataError.NotFound, NetworkHttpException(404).toNetworkDataError())
     }
 
     @Test
-    fun `other HTTP codes carry the code`() {
-        assertEquals(DataError.Network.Http(500), http(500).toNetworkDataError())
-        assertEquals(DataError.Network.Http(401), http(401).toNetworkDataError())
-        assertEquals(DataError.Network.Http(429), http(429).toNetworkDataError())
+    fun `other HTTP codes carry the code and are not treated as a lost connection`() {
+        assertEquals(DataError.Network.Http(500), NetworkHttpException(500).toNetworkDataError())
+        assertEquals(DataError.Network.Http(401), NetworkHttpException(401).toNetworkDataError())
+        assertEquals(DataError.Network.Http(429), NetworkHttpException(429).toNetworkDataError())
+    }
+
+    @Test
+    fun `NetworkHttpException exposes its code and is an IOException`() {
+        val exception = NetworkHttpException(503)
+        assertEquals(503, exception.code)
+        assertEquals("HTTP 503", exception.message)
+        assertTrue(IOException::class.java.isAssignableFrom(exception.javaClass))
     }
 
     @Test

@@ -15,6 +15,5 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.kotlinx.coroutines.android)
-    testImplementation(projects.core.network.retrofit)
     testImplementation(libs.okhttp.mockwebserver)
 }

@@ -107,9 +107,8 @@ versionCode=12
 :core:common-android             ← AppInfoImpl + Hilt module (dispatchers, ApplicationScope); chỉ :app phụ thuộc
 :core:designsystem                ← theme, màu, typography, component dùng chung
 :core:ui                          ← composable dùng chung (RemoteImage, loading/error/empty state, adaptive layout)
-:core:network:api / :impl         ← api (Kotlin thuần, không Retrofit/OkHttp): NetworkMonitor, ApiServiceFactory, @BaseUrl;
-                                    impl: HttpClient (base URL do :app cấp), JSON, NetworkMonitor, hook Set<Interceptor>
-:core:network:retrofit            ← (JVM) Throwable.toNetworkDataError() — mapping lỗi Retrofit → DataError; feature gọi API phụ thuộc
+:core:network:api / :impl         ← api (Kotlin thuần, không Retrofit/OkHttp): NetworkMonitor, ApiServiceFactory, @BaseUrl, toNetworkDataError;
+                                    impl (duy nhất dùng Retrofit/OkHttp): HttpClient, chuẩn hóa lỗi HTTP (base URL do :app cấp), JSON, NetworkMonitor, hook Set<Interceptor>
 :core:storage:api / :impl         ← key-value store generic (DataStore)
 :core:securestorage:api / :impl   ← lưu/đọc có mã hóa, generic
 :core:navigation:api / :impl      ← NavKey, Navigator, contract entry/interceptor/tab
@@ -172,7 +171,7 @@ Phụ thuộc giữa các feature:
 ### 4.3. Core tách `api` / `impl` (đã chốt)
 
 - **Tách** cho core có implementation thay được: `network`, `storage`, `securestorage`, `navigation`, `deeplink`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
-- **Kotlin/JVM thuần** cho `network:api`, `network:retrofit`, `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `navigation:api` / `deeplink:api` giữ Android library (xem build.md §3).
+- **Kotlin/JVM thuần** cho `network:api`, `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `navigation:api` / `deeplink:api` giữ Android library (xem build.md §3).
 - **Không tách** `api`/`impl` cho `designsystem`, `ui`, `testing`; `common` tách theo nền tảng (`kotlin` / `android`) — code UI / tiện ích thuần, tách ra chỉ thêm module rỗng.
 
 ## 5. Dữ liệu: business model & single source of truth
