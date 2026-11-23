@@ -10,7 +10,7 @@ android {
 
 dependencies {
     implementation(projects.core.network.api)
-    implementation(projects.core.common.kotlin)
+    implementation(projects.core.commonKotlin)
     implementation(libs.retrofit.converter.kotlinx.serialization)
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.okhttp.mockwebserver)

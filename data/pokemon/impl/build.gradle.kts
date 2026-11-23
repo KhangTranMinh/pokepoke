@@ -10,5 +10,5 @@ android {
 
 dependencies {
     implementation(projects.data.pokemon.api)
-    implementation(projects.core.common.kotlin)
+    implementation(projects.core.commonKotlin)
 }

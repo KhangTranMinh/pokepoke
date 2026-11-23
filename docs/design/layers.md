@@ -17,7 +17,7 @@ Screen ──UiAction──▶ ViewModel ──▶ UseCase ──▶ Repository 
 | **ViewModel** | `feature:*:impl/presentation/` | **chỉ** UseCase, `Navigator`, tham số `@Assisted` | `StateFlow<UiState>` | không ném, không `try` |
 | **Navigation glue** (interceptor, `DeepLinkHandler`, `EntryProviderInstaller`) | `feature:*:impl/navigation/` | UseCase, `Navigator` | theo contract core | không `try` |
 
-- `CancellationException` luôn được ném lại — chỉ helper trong `core:common:kotlin` (`dataResultOf`, `asDataResult`) bắt exception, nên luật này tự đúng.
+- `CancellationException` luôn được ném lại — chỉ helper trong `core:common-kotlin` (`dataResultOf`, `asDataResult`) bắt exception, nên luật này tự đúng.
 - **Cấm `runCatching`** trong toàn bộ `data` / `feature` (nó nuốt `CancellationException`).
 - Repository là chỗ **duy nhất** dịch exception → `DataError`. UseCase là chỗ **duy nhất** dịch `DataError` → `AppError` (mặc định `toAppError()`, use case được map riêng khi có ngữ cảnh, vd. offline + `NotFound` → `NoConnection`).
 - ViewModel chỉ `when (result) { is Success -> …; is Failure -> … }` (hoặc `onSuccess` / `onFailure`), map sang `UiState`.

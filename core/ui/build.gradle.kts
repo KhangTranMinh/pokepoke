@@ -9,6 +9,6 @@ android {
 
 dependencies {
     implementation(projects.core.designsystem)
-    implementation(projects.core.common.kotlin)
+    implementation(projects.core.commonKotlin)
     implementation(libs.coil.compose)
 }

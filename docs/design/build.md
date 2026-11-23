@@ -123,7 +123,7 @@ pluginManagement {
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 // dependencyResolutionManagement giữ nguyên
 rootProject.name = "PokePoke"     // đổi từ "Poke Poke" (dấu cách gây khó chịu cho một số tool)
-include(":app", ":debugtool", ":core:common:kotlin", ":core:common:android", ...)  // đủ danh sách ở plan.md mục 4
+include(":app", ":debugtool", ":core:common-kotlin", ":core:common-android", ...)  // đủ danh sách ở plan.md mục 4
 ```
 
 ## 3. Convention plugins (`build-logic/convention`)
@@ -138,8 +138,8 @@ include(":app", ":debugtool", ":core:common:kotlin", ":core:common:android", ...
 | `pokepoke.android.application` | `AndroidApplicationConventionPlugin` | `com.android.application`; SDK từ catalog; `jvmToolchain(jvm)`; version từ `version.properties` (mục 4); buildTypes `debug` (`applicationIdSuffix = ".debug"`, `versionNameSuffix = "-debug"`) và `release` (giữ `optimization { enable = true }` hiện có; ký bằng debug keystore tạm thời); `buildFeatures.buildConfig = true`; `androidResources.generateLocaleConfig = true`; task `verifyReleaseHasNoDebugTool` (mục 5) |
 | `pokepoke.android.library` | `AndroidLibraryConventionPlugin` | `com.android.library`; SDK; `jvmToolchain(jvm)`; `testOptions.unitTests.isIncludeAndroidResources = true`; test deps chung (junit, mockk, turbine, coroutines-test, robolectric, androidx-test-junit, `testImplementation(project(":core:testing"))` trừ chính `:core:testing`); áp dụng `pokepoke.kover`; task `verifyModuleDependencies` (mục 5) |
 | `pokepoke.android.compose` | `AndroidComposeConventionPlugin` | `org.jetbrains.kotlin.plugin.compose`; `buildFeatures.compose = true`; BOM cho implementation/testImplementation/androidTestImplementation; ui, ui-graphics, foundation, material3, material-icons-core, ui-tooling-preview; `debugImplementation` ui-tooling, ui-test-manifest; `testImplementation` ui-test-junit4; Roborazzi plugin + roborazzi, roborazzi-compose, roborazzi-junit-rule; `roborazzi { outputDir = file("src/test/screenshots") }` |
-| `pokepoke.android.feature.api` | `AndroidFeatureApiConventionPlugin` | `pokepoke.android.library`; `android.testFixtures.enable = true`; `api(core:common:kotlin)`, `api(core:navigation:api)`; `kotlinx-coroutines-core` |
-| `pokepoke.android.feature.impl` | `AndroidFeatureImplConventionPlugin` | `pokepoke.android.library` + `pokepoke.android.compose` + `pokepoke.hilt`; `implementation` core:designsystem, core:ui, core:common:kotlin, core:navigation:api, lifecycle-runtime-compose, lifecycle-viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive, material3-adaptive-layout, material3-adaptive-navigation3; `testImplementation(testFixtures(core:navigation:api))` |
+| `pokepoke.android.feature.api` | `AndroidFeatureApiConventionPlugin` | `pokepoke.android.library`; `android.testFixtures.enable = true`; `api(core:common-kotlin)`, `api(core:navigation:api)`; `kotlinx-coroutines-core` |
+| `pokepoke.android.feature.impl` | `AndroidFeatureImplConventionPlugin` | `pokepoke.android.library` + `pokepoke.android.compose` + `pokepoke.hilt`; `implementation` core:designsystem, core:ui, core:common-kotlin, core:navigation:api, lifecycle-runtime-compose, lifecycle-viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive, material3-adaptive-layout, material3-adaptive-navigation3; `testImplementation(testFixtures(core:navigation:api))` |
 | `pokepoke.hilt` | `HiltConventionPlugin` | `com.google.devtools.ksp` + `com.google.dagger.hilt.android`; `implementation` hilt-android; `ksp` hilt-compiler; `testImplementation` hilt-android-testing; `kspTest` hilt-compiler |
 | `pokepoke.room` | `RoomConventionPlugin` | `androidx.room` + ksp; `room { schemaDirectory("$projectDir/schemas") }`; room-runtime, room-ktx, `ksp` room-compiler; `testImplementation` room-testing |
 | `pokepoke.kotlin.serialization` | `KotlinSerializationConventionPlugin` | `org.jetbrains.kotlin.plugin.serialization`; `implementation` kotlinx-serialization-json |
@@ -149,7 +149,7 @@ include(":app", ":debugtool", ":core:common:kotlin", ":core:common:android", ...
 Ghi chú:
 - AGP 9 built-in Kotlin: **không** apply `org.jetbrains.kotlin.android`.
 - Nếu `testFixtures` Kotlin cần cờ: thêm `android.experimental.enableTestFixturesKotlinSupport=true` vào `gradle.properties`.
-- Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:network:api`, `core:storage:api`, `core:securestorage:api`, `data:pokemon:api`, `core:common:kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
+- Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:network:api`, `core:storage:api`, `core:securestorage:api`, `data:pokemon:api`, `core:common-kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
 - Giữ Android library cho `core:navigation:api` (`@StringRes`, `ImageVector`, Compose), `core:deeplink:api` (`PendingIntent`, phụ thuộc `navigation:api`) và `feature:*:api`.
 
 ## 4. `version.properties`
@@ -183,7 +183,7 @@ Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào 
 
 - Áp dụng cho mọi module; root aggregate (`kover(project(":x"))` cho tất cả) → `./gradlew koverHtmlReport`.
 - Exclude: `*_Factory`, `*_MembersInjector`, `*_HiltModules*`, `Hilt_*`, `*_Impl` (Room), `*_Impl$*`, `*ComposableSingletons*`, `*.BuildConfig`, `*Module` / `*Module$*` (Hilt module), `*RouteKt` (composable root — xem screens.md), `*PreviewKt`, `*.di.*`.
-- **Verify rule** `minBound(70)` (line) cho: `:core:common:kotlin`, `:core:common:android`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. Module khác không đặt ngưỡng.
+- **Verify rule** `minBound(70)` (line) cho: `:core:common-kotlin`, `:core:common-android`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. Module khác không đặt ngưỡng.
 
 ## 7. Roborazzi / Robolectric
 

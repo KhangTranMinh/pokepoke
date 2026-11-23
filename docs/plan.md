@@ -103,8 +103,8 @@ versionCode=12
 :build-logic (included)
 
 # Core — chỉ hạ tầng generic
-:core:common:kotlin              ← (JVM thuần) DataResult / AppResult, network-first helper, qualifier dispatcher, AppInfo
-:core:common:android             ← AppInfoImpl + Hilt module (dispatchers, ApplicationScope); chỉ :app phụ thuộc
+:core:common-kotlin              ← (JVM thuần) DataResult / AppResult, network-first helper, qualifier dispatcher, AppInfo
+:core:common-android             ← AppInfoImpl + Hilt module (dispatchers, ApplicationScope); chỉ :app phụ thuộc
 :core:designsystem                ← theme, màu, typography, component dùng chung
 :core:ui                          ← composable dùng chung (RemoteImage, loading/error/empty state, adaptive layout)
 :core:network:api / :impl         ← HttpClient (base URL do :app cấp), JSON, mapping lỗi,
@@ -170,7 +170,7 @@ Phụ thuộc giữa các feature:
 ### 4.3. Core tách `api` / `impl` (đã chốt)
 
 - **Tách** cho core có implementation thay được: `network`, `storage`, `securestorage`, `navigation`, `deeplink`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
-- **Kotlin/JVM thuần** cho `network:api`, `storage:api`, `securestorage:api`, `data:pokemon:api` và `common:kotlin`; `navigation:api` / `deeplink:api` giữ Android library (xem build.md §3).
+- **Kotlin/JVM thuần** cho `network:api`, `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `navigation:api` / `deeplink:api` giữ Android library (xem build.md §3).
 - **Không tách** `api`/`impl` cho `designsystem`, `ui`, `testing`; `common` tách theo nền tảng (`kotlin` / `android`) — code UI / tiện ích thuần, tách ra chỉ thêm module rỗng.
 
 ## 5. Dữ liệu: business model & single source of truth
@@ -214,7 +214,7 @@ load():
 - **Chỉ bắt đầu collect Flow từ storage sau khi fetch xong / xác nhận offline**, nên lần emit đầu tiên đã là dữ liệu cuối cùng. Sau đó vẫn tiếp tục observe storage để nhận thay đổi thật (vd. favourite đổi).
 - Dùng cache do offline → `UiState` có cờ `isOffline` để hiện banner nhỏ "đang xem dữ liệu đã lưu".
 - `NetworkMonitor` (trong `core:network:api`): `isOnline: Flow<Boolean>` dựa trên `ConnectivityManager`. Fake trong `testFixtures`.
-- Logic này viết một lần dạng helper generic trong `core:common:kotlin` (`runNetworkFirst`, `networkFirst`), **use case** gọi helper và truyền lambda. Unit test riêng cho helper.
+- Logic này viết một lần dạng helper generic trong `core:common-kotlin` (`runNetworkFirst`, `networkFirst`), **use case** gọi helper và truyền lambda. Unit test riêng cho helper.
 
 ### 5.3. URL ảnh: `PokemonImageUrls.kt`
 

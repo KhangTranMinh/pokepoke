@@ -9,5 +9,5 @@ android {
 
 dependencies {
     api(projects.core.navigation.api)
-    api(projects.core.common.kotlin)
+    api(projects.core.commonKotlin)
 }

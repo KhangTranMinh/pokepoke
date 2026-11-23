@@ -28,8 +28,8 @@ rootProject.name = "PokePoke"
 include(
     ":app",
     ":core:testing",
-    ":core:common:kotlin",
-    ":core:common:android",
+    ":core:common-kotlin",
+    ":core:common-android",
     ":core:designsystem",
     ":core:ui",
     ":core:network:api",

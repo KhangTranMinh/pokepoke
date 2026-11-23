@@ -19,9 +19,9 @@
 
 - [x] **T04 — `:core:testing`.** `MainDispatcherRule` (JUnit4, `StandardTestDispatcher`), helper `runComposeScreenshot`/rule Roborazzi dùng chung, `TestDispatchers`.
   DoD: `./gradlew :core:testing:check`.
-- [x] **T05 — `:core:common` (nay là `:core:common:kotlin` + `:core:common:android`).** Đọc contracts.md §1. Gồm `DataError`, `DataResult` + `dataResultOf`/`asDataResult`/`map`/`flatMap`, `AppError`, `AppResult` + `toAppError`/`toAppResult`/`map`/`onSuccess`/`onFailure`, dispatchers + Hilt module, `runNetworkFirst`, `DataSnapshot`, `networkFirst`, `AppInfo`.
+- [x] **T05 — `:core:common` (nay là `:core:common-kotlin` + `:core:common-android`).** Đọc contracts.md §1. Gồm `DataError`, `DataResult` + `dataResultOf`/`asDataResult`/`map`/`flatMap`, `AppError`, `AppResult` + `toAppError`/`toAppResult`/`map`/`onSuccess`/`onFailure`, dispatchers + Hilt module, `runNetworkFirst`, `DataSnapshot`, `networkFirst`, `AppInfo`.
   Test: `dataResultOf` / `asDataResult` bắt lỗi và **ném lại CancellationException**; `asDataResult` sau lỗi phát Failure rồi subscribe lại, phát tiếp Success khi upstream hết lỗi, backoff đúng (dùng virtual time); `toAppError` đủ mọi `DataError`; mọi nhánh của `runNetworkFirst` / `networkFirst` (online-success, offline do monitor, NoConnection / Timeout → offline, offline-có-cache, offline-không-cache (NotFound → NoConnection), Http / Parse → lỗi không đọc cache, emission đầu tiên đã là dữ liệu cuối cùng (không phát cache trước), cache cập nhật sau đó vẫn phát).
-  DoD: `./gradlew :core:common:kotlin:check :core:common:android:check koverVerify`.
+  DoD: `./gradlew :core:common-kotlin:check :core:common-android:check koverVerify`.
 - [ ] **T06 — `:core:designsystem`.** Đọc designsystem.md §1. Theme, màu, type, dimens, shape, icons, mọi component + Previews.
   Test: screenshot light/dark cho từng component; UI test cho `PokeTextField` (show/hide password), `PokePrimaryButton` (loading không click được).
   DoD: `./gradlew :core:designsystem:check recordRoborazziDebug` rồi `verifyRoborazziDebug` xanh; commit ảnh.

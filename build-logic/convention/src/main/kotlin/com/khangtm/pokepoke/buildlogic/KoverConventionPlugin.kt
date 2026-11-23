@@ -35,9 +35,9 @@ class KoverConventionPlugin : Plugin<Project> {
     internal companion object {
         const val MIN_LINE_COVERAGE_PERCENT = 70
 
-        /** `:core:common:kotlin`, `:core:common:android`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. */
+        /** `:core:common-kotlin`, `:core:common-android`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. */
         fun requiresCoverageThreshold(path: String): Boolean {
-            if (path == ":core:common:kotlin" || path == ":core:common:android" || path == ":debugtool") return true
+            if (path == ":core:common-kotlin" || path == ":core:common-android" || path == ":debugtool") return true
             val inLayer = listOf(":core:", ":data:", ":feature:").any { path.startsWith(it) }
             return inLayer && path.endsWith(":impl")
         }

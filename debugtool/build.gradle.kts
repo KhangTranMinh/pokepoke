@@ -11,7 +11,7 @@ android {
 dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.ui)
-    implementation(projects.core.common.kotlin)
+    implementation(projects.core.commonKotlin)
     implementation(projects.core.network.api)
     implementation(projects.core.storage.api)
     implementation(projects.core.securestorage.api)
