@@ -11,4 +11,5 @@ dependencies {
     implementation(projects.core.navigation.api)
     implementation(projects.core.commonKotlin)
     implementation(libs.kotlinx.coroutines.android)
+    testImplementation(testFixtures(projects.core.navigation.api))
 }

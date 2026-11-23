@@ -13,4 +13,8 @@ dependencies {
     api(libs.androidx.compose.ui.graphics)
     api(libs.androidx.compose.material.icons.core)
     api(libs.kotlinx.coroutines.core)
+
+    // NavigatorContract (testFixtures) checks FakeNavigator and NavigatorImpl against the same rules.
+    testFixturesApi(libs.junit)
+    testFixturesApi(libs.kotlinx.coroutines.test)
 }

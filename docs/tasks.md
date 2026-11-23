@@ -36,7 +36,7 @@
   DoD: `./gradlew :core:storage:api:check :core:storage:impl:check`.
 - [x] **T10 — `:core:securestorage`.** Đọc contracts.md §4. Test với `AeadProvider` cleartext: round-trip, dữ liệu trên disk không chứa plaintext, đổi key (associated data) không giải mã được, `observeKeys`.
   DoD: `./gradlew :core:securestorage:api:check :core:securestorage:impl:check`.
-- [ ] **T11 — `:core:navigation`.** Đọc contracts.md §5. `NavigatorImpl` (`@ActivityRetainedScoped`), `@Multibinds` cho các set. Test: Push / ReplaceTop / ResetTo / goBack; thứ tự priority; Redirect đầu tiên thắng và không bị intercept lại; request tuần tự; `FakeNavigator`.
+- [x] **T11 — `:core:navigation`.** Đọc contracts.md §5. `NavigatorImpl` (`@ActivityRetainedScoped`), `@Multibinds` cho các set. Test: Push / ReplaceTop / ResetTo / goBack; thứ tự priority; Redirect đầu tiên thắng và không bị intercept lại; request tuần tự; `FakeNavigator`.
   DoD: `./gradlew :core:navigation:api:check :core:navigation:impl:check`.
 - [ ] **T12 — `:core:deeplink`.** Đọc contracts.md §6, deeplinks.md. Test: chuẩn hóa custom scheme / https / host lạ / scheme lạ / `/` cuối / hoa thường / query; `DeepLinkPattern`; dispatcher chọn handler đầu tiên khớp, trả false khi không khớp; `DeepLinkIntentFactory` (Robolectric).
   DoD: `./gradlew :core:deeplink:api:check :core:deeplink:impl:check`.
