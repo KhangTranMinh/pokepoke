@@ -12,4 +12,5 @@ dependencies {
     implementation(projects.core.commonKotlin)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.tink.android)
+    testImplementation(testFixtures(projects.core.securestorage.api))
 }

@@ -34,7 +34,7 @@
   DoD: `./gradlew :core:network:check :core:connectivity:check`.
 - [x] **T09 — `:core:storage`.** Đọc contracts.md §3. Test (Robolectric, file tạm): put/observe từng kiểu, remove, clear, `observeAll`, cùng name trả cùng instance, `storeNames` bỏ file `secure_`. Fake trong testFixtures + test cho fake.
   DoD: `./gradlew :core:storage:api:check :core:storage:impl:check`.
-- [ ] **T10 — `:core:securestorage`.** Đọc contracts.md §4. Test với `AeadProvider` cleartext: round-trip, dữ liệu trên disk không chứa plaintext, đổi key (associated data) không giải mã được, `observeKeys`.
+- [x] **T10 — `:core:securestorage`.** Đọc contracts.md §4. Test với `AeadProvider` cleartext: round-trip, dữ liệu trên disk không chứa plaintext, đổi key (associated data) không giải mã được, `observeKeys`.
   DoD: `./gradlew :core:securestorage:api:check :core:securestorage:impl:check`.
 - [ ] **T11 — `:core:navigation`.** Đọc contracts.md §5. `NavigatorImpl` (`@ActivityRetainedScoped`), `@Multibinds` cho các set. Test: Push / ReplaceTop / ResetTo / goBack; thứ tự priority; Redirect đầu tiên thắng và không bị intercept lại; request tuần tự; `FakeNavigator`.
   DoD: `./gradlew :core:navigation:api:check :core:navigation:impl:check`.
