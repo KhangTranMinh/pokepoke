@@ -8,7 +8,7 @@
 
 ## Giai đoạn 1 — Build
 
-- [ ] **T01 — Version catalog & toolchain.** Đọc: build.md §1, §8. Cập nhật `gradle/libs.versions.toml` (toàn bộ version + library + plugin), `gradle.properties`. Áp dụng các bước ở build.md §1.3 nếu lỗi.
+- [x] **T01 — Version catalog & toolchain.** Đọc: build.md §1, §8. Cập nhật `gradle/libs.versions.toml` (toàn bộ version + library + plugin), `gradle.properties`. Áp dụng các bước ở build.md §1.3 nếu lỗi.
   DoD: `./gradlew assembleDebug` xanh với app hiện tại (cập nhật `app/build.gradle.kts` tối thiểu để build).
 - [ ] **T02 — `build-logic` + convention plugins + `version.properties`.** Đọc: build.md §2–§7, plan.md §2–3. Tạo `build-logic`, mọi plugin trong bảng build.md §3, task `verifyModuleDependencies`, `verifyReleaseHasNoDebugTool`, `version.properties` (1.0.0 / 1). Chuyển `:app` sang `pokepoke.android.application` + compose + hilt (tạo `PokePokeApplication` rỗng `@HiltAndroidApp`).
   DoD: `./gradlew assembleDebug assembleRelease check` xanh; APK debug có `versionName` `1.0.0-debug`, `versionCode` 1.
