@@ -407,10 +407,10 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 ### 9a. `:translation`
 
 - Nằm ở root, **ngang hàng** `core` / `data` / `feature` (không thuộc `core`); không phụ thuộc module nào, mọi module khác được phụ thuộc.
-- Module Android library chỉ chứa resource. Mỗi nhóm một file `strings_<module>.xml` ở `values/` (en) và `values-vi/` (vi); key có tiền tố module. Chuỗi không cần dịch (vd. `app_name`) ở `values/non-translation.xml`.
+- Module Android library chỉ chứa resource. Chỉ có hai file: `strings.xml` ở `values/` (en) và `values-vi/` (vi), key có tiền tố module; chuỗi không cần dịch (vd. `app_name`) ở `values/non-translation.xml`.
 - Module khác dùng `import com.khangtm.pokepoke.translation.R`. Hiện không có code; nếu sau này cần remote translation thì thêm vào module này mà không đụng các feature.
 - `:debugtool` giữ strings riêng (chỉ `values/`), vì debugtool không được lọt vào release.
-- Test kiểm tra khớp key / placeholder giữa các ngôn ngữ.
+- Test kiểm tra khớp key / placeholder giữa các ngôn ngữ và tiền tố key hợp lệ.
 
 ## 10. Testing
 

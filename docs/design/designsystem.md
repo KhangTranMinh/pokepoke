@@ -126,7 +126,7 @@ Strings chung khác: `ui_retry` Retry/Thử lại, `ui_offline_banner` "You're o
 
 ## 3. Quy tắc UI
 
-- Mọi text hiển thị và `contentDescription` lấy từ `strings_<module>.xml` trong `:translation` (cả `values/` English và `values-vi/` Tiếng Việt); chuỗi không cần dịch ở `non-translation.xml`. Ngoại lệ duy nhất: dữ liệu (tên Pokémon, tên ability, số id) — format qua `PokemonFormat`.
+- Mọi text hiển thị và `contentDescription` lấy từ `strings.xml` trong `:translation` (`values/` English và `values-vi/` Tiếng Việt, key có tiền tố module); chuỗi không cần dịch ở `non-translation.xml`. Ngoại lệ duy nhất: dữ liệu (tên Pokémon, tên ability, số id) — format qua `PokemonFormat`.
 - Key string có tiền tố module: `designsystem_`, `ui_`, `home_`, `details_`, `favourite_`, `profile_`, `auth_`, `onboarding_`, `main_`, `debugtool_`.
 - Mỗi screen có màu nền `surface`; nội dung dạng form (login, profile) giới hạn `maxContentWidth` và căn giữa trên màn rộng.
 - Edge-to-edge: `Scaffold` xử lý insets; không hardcode padding status bar.
