@@ -407,7 +407,7 @@ sealed interface ProfileUiAction {
 
 ## 8. Debugtool (`:debugtool`)
 
-Package `com.khangtm.pokepoke.debugtool`. Điều hướng nội bộ bằng back stack riêng (`mutableStateListOf<DebugScreen>()`), **không** dùng Navigator của app. Text vẫn qua `strings.xml` riêng của `:debugtool` (không dùng `:core:translation`, để không lọt vào release; chỉ cần `values/` English).
+Package `com.khangtm.pokepoke.debugtool`. Điều hướng nội bộ bằng back stack riêng (`mutableStateListOf<DebugScreen>()`), **không** dùng Navigator của app. Text vẫn qua `strings.xml` riêng của `:debugtool` (không dùng `:translation`, để không lọt vào release; chỉ cần `values/` English).
 
 | Screen | Nội dung |
 |---|---|

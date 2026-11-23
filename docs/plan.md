@@ -113,7 +113,7 @@ versionCode=12
 :core:securestorage:api / :impl   ← lưu/đọc có mã hóa, generic
 :core:navigation:api / :impl      ← NavKey, Navigator, contract entry/interceptor/tab
 :core:deeplink:api / :impl        ← DeepLinkHandler, DeepLinkDispatcher, URI matching
-:core:translation                 ← mọi strings.xml (values/ en + values-vi/ vi), chuỗi không dịch ở non-translation.xml; sau này có thể thêm remote translation
+:translation                      ← mọi strings.xml (values/ en + values-vi/ vi), chuỗi không dịch ở non-translation.xml; sau này có thể thêm remote translation
 :core:testing                     ← tiện ích test (không chứa test case)
 
 # Data — kho dữ liệu nghiệp vụ dùng chung (SSOT), không gọi network
@@ -398,16 +398,17 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
 
 ## 9. Đa ngôn ngữ
 
-Chuỗi giao diện nằm ở `:core:translation` (mục 9a); việc đổi ngôn ngữ không cần module riêng:
+Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ngữ không cần module riêng:
 - `profile:impl` gọi thẳng `AppCompatDelegate.setApplicationLocales(...)`.
 - Lựa chọn được lưu tự động: Android 13+ do hệ thống; Android 11–12 do AppCompat (`autoStoreLocales` trong manifest). Không lưu vào `core:storage`.
 - Chưa chọn → theo ngôn ngữ máy (không phải en/vi → en). Đã chọn → giữ nguyên dù đổi ngôn ngữ máy.
 - `locales_config.xml` + cấu hình manifest ở `:app`.
 
-### 9a. `:core:translation`
+### 9a. `:translation`
 
+- Nằm ở root, **ngang hàng** `core` / `data` / `feature` (không thuộc `core`); không phụ thuộc module nào, mọi module khác được phụ thuộc.
 - Module Android library chỉ chứa resource. Mỗi nhóm một file `strings_<module>.xml` ở `values/` (en) và `values-vi/` (vi); key có tiền tố module. Chuỗi không cần dịch (vd. `app_name`) ở `values/non-translation.xml`.
-- Module khác dùng `import com.khangtm.pokepoke.core.translation.R`. Hiện không có code; nếu sau này cần remote translation thì thêm vào module này mà không đụng các feature.
+- Module khác dùng `import com.khangtm.pokepoke.translation.R`. Hiện không có code; nếu sau này cần remote translation thì thêm vào module này mà không đụng các feature.
 - `:debugtool` giữ strings riêng (chỉ `values/`), vì debugtool không được lọt vào release.
 - Test kiểm tra khớp key / placeholder giữa các ngôn ngữ.
 
