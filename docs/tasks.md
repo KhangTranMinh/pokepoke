@@ -17,7 +17,7 @@
 
 ## Giai đoạn 2 — Core
 
-- [ ] **T04 — `:core:testing`.** `MainDispatcherRule` (JUnit4, `StandardTestDispatcher`), helper `runComposeScreenshot`/rule Roborazzi dùng chung, `TestDispatchers`.
+- [x] **T04 — `:core:testing`.** `MainDispatcherRule` (JUnit4, `StandardTestDispatcher`), helper `runComposeScreenshot`/rule Roborazzi dùng chung, `TestDispatchers`.
   DoD: `./gradlew :core:testing:check`.
 - [ ] **T05 — `:core:common`.** Đọc contracts.md §1. Gồm `DataError`, `DataResult` + `dataResultOf`/`asDataResult`/`map`/`flatMap`, `AppError`, `AppResult` + `toAppError`/`toAppResult`/`map`/`onSuccess`/`onFailure`, dispatchers + Hilt module, `runNetworkFirst`, `DataSnapshot`, `networkFirst`, `AppInfo`.
   Test: `dataResultOf` / `asDataResult` bắt lỗi và **ném lại CancellationException**; `asDataResult` sau lỗi phát Failure rồi subscribe lại, phát tiếp Success khi upstream hết lỗi, backoff đúng (dùng virtual time); `toAppError` đủ mọi `DataError`; mọi nhánh của `runNetworkFirst` / `networkFirst` (online-success, offline do monitor, NoConnection / Timeout → offline, offline-có-cache, offline-không-cache (NotFound → NoConnection), Http / Parse → lỗi không đọc cache, emission đầu tiên đã là dữ liệu cuối cùng (không phát cache trước), cache cập nhật sau đó vẫn phát).
