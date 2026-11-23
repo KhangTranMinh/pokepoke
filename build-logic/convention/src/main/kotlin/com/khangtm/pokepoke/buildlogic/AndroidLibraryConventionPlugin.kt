@@ -4,6 +4,8 @@ import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.withType
+import org.gradle.api.tasks.testing.Test
 
 class AndroidLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) {
@@ -16,6 +18,7 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
                 testOptions.unitTests.isIncludeAndroidResources = true
             }
             registerVerifyModuleDependencies()
+            tasks.withType<Test>().configureEach { failOnNoDiscoveredTests.set(false) }
 
             addDep("testImplementation", "junit")
             addDep("testImplementation", "mockk")

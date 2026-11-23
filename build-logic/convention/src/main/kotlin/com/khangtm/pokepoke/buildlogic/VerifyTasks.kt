@@ -53,10 +53,11 @@ abstract class VerifyReleaseHasNoDebugToolTask : DefaultTask() {
 
 /** Registers `verifyModuleDependencies` and hooks it into `preBuild` and `check`. */
 internal fun Project.registerVerifyModuleDependencies() {
+    val projectPath = path // not `path` inside the lambda below: there it is the task's path
     val verify = tasks.register<VerifyModuleDependenciesTask>("verifyModuleDependencies") {
         group = "verification"
         description = "Fails when the module breaks the architecture dependency rules."
-        modulePath.set(path)
+        modulePath.set(projectPath)
     }
     afterEvaluate {
         // Collected eagerly into plain strings so the task stays configuration-cache friendly.
