@@ -13,7 +13,12 @@
 
 ## Implement project (dành cho agent)
 
-- **Bắt đầu từ [`docs/tasks.md`](docs/tasks.md)**: làm task đầu tiên chưa tick, theo đúng thứ tự, đủ DoD rồi mới sang task sau. Tick `[x]` và commit sau mỗi task (`T0x: <tóm tắt>`). Chỉ push khi user yêu cầu.
+- **Bắt đầu từ [`docs/tasks.md`](docs/tasks.md)**: làm task đầu tiên chưa tick, theo đúng thứ tự, đủ DoD rồi mới sang task sau. Chỉ push khi user yêu cầu.
+- **Mỗi task = đúng 1 commit** (bắt buộc):
+  - Chỉ commit khi DoD đã xanh; không commit dở dang giữa chừng, không gộp 2 task vào 1 commit, không tách 1 task thành nhiều commit.
+  - Commit chứa trọn task: code, test, ảnh screenshot Roborazzi, dấu `[x]` trong `docs/tasks.md`, dòng mới trong `docs/decisions.md` (nếu có).
+  - Message: dòng đầu `Txx: <tóm tắt>` (2 chữ số: `T01`, `T17`); body liệt kê ý chính và các quyết định đã ghi vào `decisions.md`; cuối message có dòng `Co-Authored-By` theo quy định của harness.
+  - Phát hiện lỗi của task trước khi đang làm task sau: sửa luôn trong commit của task hiện tại, ghi `Fix Tyy: <mô tả>` trong body. Không amend / rebase commit đã có.
 - Tài liệu (thứ tự ưu tiên khi mâu thuẫn): `docs/design/contracts.md` > `docs/design/layers.md` > `docs/design/screens.md` > `docs/design/designsystem.md`, `docs/design/deeplinks.md`, `docs/design/build.md` > `docs/plan.md` > `docs/requirements.md`.
 - **Không dừng lại để hỏi.** Chỗ tài liệu chưa nói rõ: chọn phương án đơn giản nhất, nhất quán với tài liệu, rồi ghi vào `docs/decisions.md`. Lệch khỏi tài liệu (version, API thư viện khác thực tế) cũng phải ghi.
 - Version thư viện: chỉ dùng version trong `docs/design/build.md` §1; lỗi tương thích → làm theo build.md §1.3.
