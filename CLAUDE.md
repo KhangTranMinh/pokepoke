@@ -13,7 +13,12 @@
 
 ## Implement project (dành cho agent)
 
-- **Bắt đầu từ [`docs/tasks.md`](docs/tasks.md)**: làm task đầu tiên chưa tick, theo đúng thứ tự, đủ DoD rồi mới sang task sau. Chỉ push khi user yêu cầu.
+- **Bắt đầu từ [`docs/tasks.md`](docs/tasks.md)**: làm task đầu tiên chưa tick, theo đúng thứ tự, đủ DoD rồi mới sang task sau.
+- **Mỗi lần chỉ làm 1 task** (bắt buộc). Xong task, theo đúng thứ tự:
+  1. Cập nhật `docs/tasks.md`: tick `[x]` task vừa xong.
+  2. Commit (quy tắc bên dưới).
+  3. Push (theo mục Git / GitHub authentication ở trên).
+  4. **Dừng lại**: báo user task vừa xong (tóm tắt, kết quả DoD, quyết định đã ghi vào `decisions.md`) và **chờ user yêu cầu** mới làm task tiếp theo. Không tự bắt đầu task sau.
 - **Mỗi task = đúng 1 commit** (bắt buộc):
   - Chỉ commit khi DoD đã xanh; không commit dở dang giữa chừng, không gộp 2 task vào 1 commit, không tách 1 task thành nhiều commit.
   - Commit chứa trọn task: code, test, ảnh screenshot Roborazzi, dấu `[x]` trong `docs/tasks.md`, dòng mới trong `docs/decisions.md` (nếu có).

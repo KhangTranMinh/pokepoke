@@ -1,6 +1,6 @@
 # Tasks
 
-> Làm **tuần tự** từ T01. Mỗi task: đọc các tài liệu được chỉ định → implement → chạy **DoD** → đánh dấu `[x]` ở đây → **đúng 1 commit cho task đó** (message `Txx: <tóm tắt>`, quy tắc đầy đủ ở `CLAUDE.md`). Không chuyển task khi DoD chưa xanh.
+> Làm **tuần tự** từ T01. Mỗi task: đọc các tài liệu được chỉ định → implement → chạy **DoD** → đánh dấu `[x]` ở đây → **đúng 1 commit cho task đó** (message `Txx: <tóm tắt>`) → push → **dừng, chờ user yêu cầu làm task tiếp**. Quy tắc đầy đủ ở `CLAUDE.md`. Không chuyển task khi DoD chưa xanh.
 >
 > Thứ tự ưu tiên tài liệu khi mâu thuẫn: `contracts.md` > `screens.md` > `designsystem.md` / `deeplinks.md` / `build.md` > `plan.md` > `requirements.md`. Điểm chưa được mô tả: chọn phương án đơn giản nhất nhất quán với tài liệu, ghi vào [`decisions.md`](decisions.md), **không dừng lại để hỏi**.
 >
