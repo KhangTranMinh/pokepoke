@@ -14,7 +14,7 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
                 ":core:designsystem",
                 ":core:ui",
                 ":core:common-kotlin",
-                ":core:navigation:api",
+                ":core:navigation",
                 ":translation",
             ).forEach { dependencies.add("implementation", project(it)) }
             listOf(
@@ -26,7 +26,7 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
                 "androidx-compose-material3-adaptive-layout",
                 "androidx-compose-material3-adaptive-navigation3",
             ).forEach { addDep("implementation", it) }
-            dependencies.add("testImplementation", dependencies.testFixtures(project(":core:navigation:api")))
+            dependencies.add("testImplementation", dependencies.testFixtures(project(":core:navigation")))
         }
     }
 }

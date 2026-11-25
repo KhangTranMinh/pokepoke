@@ -8,6 +8,6 @@ android {
 }
 
 dependencies {
-    api(projects.core.navigation.api)
+    api(projects.core.navigation)
     api(projects.core.commonKotlin)
 }

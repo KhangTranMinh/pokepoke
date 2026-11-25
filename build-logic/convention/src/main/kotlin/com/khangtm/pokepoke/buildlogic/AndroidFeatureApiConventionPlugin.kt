@@ -14,7 +14,7 @@ class AndroidFeatureApiConventionPlugin : Plugin<Project> {
                 testFixtures.enable = true
             }
             dependencies.add("api", project(":core:common-kotlin"))
-            dependencies.add("api", project(":core:navigation:api"))
+            dependencies.add("api", project(":core:navigation"))
             addDep("implementation", "kotlinx-coroutines-core")
         }
     }
