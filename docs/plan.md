@@ -292,9 +292,9 @@ Dùng **Navigation 3** (đã chốt).
 
 ### 6.3. `core:deeplink` — chỉ hạ tầng
 
-- Contract `DeepLinkHandler`: nhận URI, trả về danh sách `NavKey` (back stack). Feature đăng ký qua Hilt multibinding.
-- `DeepLinkDispatcher.dispatch(uri)`: duyệt handler → chạy qua interceptor → gọi `Navigator`.
-- Tiện ích match URI pattern.
+- Contract `DeepLinkHandler`: nhận `DeepLink` đã chuẩn hóa (segments + query), trả `NavRequest?` (null nếu không khớp); muốn dựng back stack thì trả `NavRequest.ResetTo(keys)`. Feature đăng ký qua Hilt multibinding.
+- `DeepLinkDispatcher.dispatch(uri)`: parse URI → handler đầu tiên khớp → `navigator.execute(request)` (interceptor chạy bên trong `Navigator`); trả false nếu URI không hợp lệ hoặc không handler nào khớp.
+- Tiện ích match URI pattern (`DeepLinkPattern`). Chữ ký chuẩn: contracts.md §6.
 - Push notification chỉ cần đính kèm URI, đi chung đường với deeplink / app link.
 
 ### 6.4. Feature tự quyết định
