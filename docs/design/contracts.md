@@ -282,10 +282,12 @@ Luật của `Navigator` (`internal class NavigatorImpl`, `@ActivityRetainedScop
 
 testFixtures: `FakeNavigator` (ghi lại `requests: List<NavRequest>`, `backCount`, áp dụng request trực tiếp không interceptor), `NavigatorContract` (bộ test chung, chạy cho `FakeNavigator` và `NavigatorImpl`), `TestNavKey(id)`. Module khác dùng `testImplementation(testFixtures(projects.core.navigation))`.
 
-## 6. `:core:deeplink:api`
+## 6. `:core:deeplink`
+
+Một module Android library **không tách `api`/`impl`** (tiêu chí plan.md §4.3): cài đặt chỉ dùng `java.net.URI` và Android framework (`PackageManager`, `PendingIntent` — vốn đã có trong chữ ký contract) + Hilt, chỉ có một cài đặt. Contract bên dưới là public; `DeepLinkDispatcherImpl`, `DeepLinkIntentFactoryImpl` và Hilt module (`...core.deeplink.di`) là `internal`. Phụ thuộc `api(projects.core.navigation)` (vì `NavRequest` nằm trong chữ ký). Feature, `:app` (và `:debugtool` nếu cần) `implementation(projects.core.deeplink)`.
 
 ```kotlin
-package com.khangtm.pokepoke.core.deeplink.api
+package com.khangtm.pokepoke.core.deeplink
 
 /** Link đã chuẩn hóa: pokepoke://pokemon/25 và https://pokepoke.com/pokemon/25 → segments ["pokemon","25"]. */
 data class DeepLink(val segments: List<String>, val query: Map<String, String>)

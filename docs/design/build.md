@@ -150,7 +150,7 @@ Ghi chú:
 - AGP 9 built-in Kotlin: **không** apply `org.jetbrains.kotlin.android`.
 - Nếu `testFixtures` Kotlin cần cờ: thêm `android.experimental.enableTestFixturesKotlinSupport=true` vào `gradle.properties`.
 - Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:storage:api`, `core:securestorage:api`, `data:pokemon:api`, `core:common-kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
-- Giữ Android library cho `core:navigation` (`@StringRes`, `ImageVector`, Compose; không tách api/impl), `core:deeplink:api` (`PendingIntent`, phụ thuộc `core:navigation`) và `feature:*:api`.
+- Giữ Android library cho `core:navigation` (`@StringRes`, `ImageVector`, Compose; không tách api/impl), `core:deeplink` (`PendingIntent`, phụ thuộc `core:navigation`; không tách api/impl) và `feature:*:api`.
 
 ## 4. `version.properties`
 
@@ -184,7 +184,7 @@ Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào 
 
 - Áp dụng cho mọi module; root aggregate (`kover(project(":x"))` cho tất cả) → `./gradlew koverHtmlReport`.
 - Exclude: `*_Factory`, `*_MembersInjector`, `*_HiltModules*`, `Hilt_*`, `*_Impl` (Room), `*_Impl$*`, `*ComposableSingletons*`, `*.BuildConfig`, `*Module` / `*Module$*` (Hilt module), `*RouteKt` (composable root — xem screens.md), `*PreviewKt`, `*.di.*`.
-- **Verify rule** `minBound(70)` (line) cho: `:core:common-kotlin`, `:core:common-android`, `:core:network`, `:core:connectivity`, `:core:navigation`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. Module khác không đặt ngưỡng.
+- **Verify rule** `minBound(70)` (line) cho: `:core:common-kotlin`, `:core:common-android`, `:core:network`, `:core:connectivity`, `:core:navigation`, `:core:deeplink`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. Module khác không đặt ngưỡng.
 
 ## 7. Roborazzi / Robolectric
 

@@ -113,7 +113,7 @@ versionCode=12
 :core:storage:api / :impl         ← key-value store generic (DataStore)
 :core:securestorage:api / :impl   ← lưu/đọc có mã hóa, generic
 :core:navigation                  ← (không tách api/impl) NavKey, Navigator, contract entry/interceptor/tab; NavigatorImpl internal
-:core:deeplink:api / :impl        ← DeepLinkHandler, DeepLinkDispatcher, URI matching
+:core:deeplink                    ← (không tách api/impl) DeepLinkHandler, DeepLinkDispatcher, URI matching; cài đặt internal
 :translation                      ← mọi strings.xml (values/ en + values-vi/ vi), chuỗi không dịch ở non-translation.xml; sau này có thể thêm remote translation
 :core:testing                     ← tiện ích test (không chứa test case)
 
@@ -171,10 +171,11 @@ Phụ thuộc giữa các feature:
 
 ### 4.3. Core tách `api` / `impl` (đã chốt)
 
-- **Tách** cho core có implementation thay được hoặc cần contract trung lập: `storage`, `securestorage`, `deeplink`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
+- **Tách** cho core có implementation thay được hoặc cần contract trung lập: `storage`, `securestorage`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
 - **Không tách** `network` và `connectivity`: mọi module dùng network đều cần Retrofit / OkHttp nên `:api` thuần không che được gì; cài đặt đã `internal`.
+- **Không tách** `deeplink`: cài đặt chỉ dùng `java.net.URI` + Android framework (`PendingIntent` đã có trong chữ ký contract) + Hilt, chỉ có một cài đặt; `:api` cũng không thể là Kotlin thuần (`PendingIntent`, `NavRequest`) nên tách không được gì.
 - **Không tách** `navigation`: `NavigatorImpl` chỉ dùng thứ contract đã kéo (navigation3, Compose runtime, coroutines) + Hilt, chỉ có một cài đặt, và test dùng `FakeNavigator` trong testFixtures; `internal` đủ che cài đặt. Tiêu chí chung: chỉ tách `:api` khi `:impl` kéo thư viện nặng / dễ rò (DataStore, Tink, Room, Retrofit) hoặc có nhiều cài đặt. Tách sau nếu có nhiều implementation (giữ nguyên package, feature chỉ đổi dòng dependency).
-- **Kotlin/JVM thuần** cho `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `core:navigation` / `deeplink:api` giữ Android library (xem build.md §3).
+- **Kotlin/JVM thuần** cho `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `core:navigation` / `core:deeplink` giữ Android library (xem build.md §3).
 - **Không tách** `api`/`impl` cho `designsystem`, `ui`, `testing`; `common` tách theo nền tảng (`kotlin` / `android`) — code UI / tiện ích thuần, tách ra chỉ thêm module rỗng.
 
 ## 5. Dữ liệu: business model & single source of truth
@@ -471,6 +472,6 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 - [x] Ảnh list dựng theo quy ước, logic nằm trong `PokemonImageUrls.kt`.
 - [x] Mỗi screen: 1 `UiState` + 1 `UiAction`; root phụ thuộc ViewModel, UI còn lại stateless & preview được.
 - [x] Single Activity.
-- [x] Core tách `api`/`impl` theo mục 4.3: tách `storage`, `securestorage`, `deeplink`; không tách `network`, `connectivity`, `navigation`, `designsystem`, `ui`, `testing`; `common` tách theo nền tảng.
+- [x] Core tách `api`/`impl` theo mục 4.3: tách `storage`, `securestorage`; không tách `network`, `connectivity`, `navigation`, `deeplink`, `designsystem`, `ui`, `testing`; `common` tách theo nền tảng.
 - [x] Navigation: **Navigation 3**.
 - [x] `:debugtool`: một module, chỉ `debugImplementation`, độc lập, chỉ dùng `core`; điểm vào là nút con bọ overlay trên mọi activity.
