@@ -46,7 +46,7 @@ Type scale mặc định của Material 3, font hệ thống. Ghi đè: `headlin
 
 ```kotlin
 object PokeSpacing { val xxs = 2.dp; val xs = 4.dp; val sm = 8.dp; val md = 12.dp; val lg = 16.dp; val xl = 24.dp; val xxl = 32.dp }
-object PokeSizes { val minTouchTarget = 48.dp; val cardImage = 96.dp; val detailImage = 220.dp; val gridMinCellWidth = 160.dp; val maxContentWidth = 600.dp }
+object PokeSizes { val minTouchTarget = 48.dp; val buttonHeight = 52.dp; val cardImage = 96.dp; val detailImage = 220.dp; val gridMinCellWidth = 160.dp; val maxContentWidth = 600.dp }
 // Shapes: extraSmall 4, small 8, medium 12, large 16, extraLarge 28 (RoundedCornerShape)
 ```
 
@@ -84,6 +84,8 @@ object PokeIcons {
 | `PokePrimaryButton` | `(text: String, onClick, modifier, enabled = true, loading = false)` | `Button` full width, cao 52.dp; `loading` → `CircularProgressIndicator` 20.dp thay text, disable click |
 | `PokeSecondaryButton` | như trên | `OutlinedButton` |
 | `PokeTextButton` | `(text, onClick, modifier)` | `TextButton` |
+
+Ghi chú cài đặt (T06): `loading` không disable nút mà bỏ qua click (giữ màu nền), spinner có contentDescription `designsystem_loading`; `PokeSecondaryButton` cũng có `loading`; `PokeRadioDialog` có nút Cancel (`designsystem_cancel`); strings `designsystem_back`, `designsystem_clear`, `designsystem_cancel`, `designsystem_loading`, `designsystem_show_password`, `designsystem_hide_password`.
 | `PokeTextField` | `(value, onValueChange, label: String, modifier, isPassword = false, isError = false, supportingText: String? = null, imeAction = ImeAction.Next, onImeAction: () -> Unit = {})` | `OutlinedTextField`, single line; `isPassword` → nút show/hide (icon visibility) và `PasswordVisualTransformation` |
 | `PokeSearchField` | `(query, onQueryChange, onSearch: () -> Unit, onClear: () -> Unit, placeholder: String, modifier)` | `OutlinedTextField` bo `extraLarge`, leading Search, trailing Clear khi query không rỗng, `ImeAction.Search` |
 | `PokeCard` | `(onClick: (() -> Unit)?, modifier, content: @Composable ColumnScope.() -> Unit)` | `ElevatedCard`, shape `large` |
@@ -102,7 +104,7 @@ Package `com.khangtm.pokepoke.core.ui`. Composable dùng chung **không biết n
 |---|---|---|
 | `RemoteImage` | `(url: String?, contentDescription: String?, modifier, contentScale = ContentScale.Fit)` | Coil `AsyncImage`; khi loading: nền `surfaceContainerHigh`; lỗi / url null: icon `PokeIcons.Pokeball` màu `outline` ở giữa |
 | `LoadingState` | `(modifier)` | `CircularProgressIndicator` ở giữa, chiếm hết vùng |
-| `ErrorState` | `(error: AppError, onRetry: () -> Unit, modifier)` | icon + tiêu đề + mô tả theo `error` (bảng dưới) + `PokeSecondaryButton(R.string.ui_retry)` |
+| `ErrorState` | `(error: AppError, onRetry: () -> Unit, modifier)` | icon (`CloudOff` cho `NoConnection`, `Pokeball` cho lỗi khác) + tiêu đề + mô tả theo `error` (bảng dưới) + `PokeSecondaryButton(R.string.ui_retry)` |
 | `EmptyState` | `(title: String, modifier, message: String? = null, icon: ImageVector? = null, actionText: String? = null, onAction: (() -> Unit)? = null)` | dùng cho rỗng, cần đăng nhập, placeholder pane detail |
 | `OfflineBanner` | `(modifier)` | hàng full width nền `tertiaryContainer`, icon CloudOff + `R.string.ui_offline_banner` |
 | `LoadMoreFooter` | `(state: LoadMoreState, onRetry: () -> Unit, modifier)` | `Loading` → progress nhỏ; `Error` → text lỗi + nút retry; `Idle`/`EndReached` → không hiển thị gì |
@@ -122,12 +124,12 @@ Package `com.khangtm.pokepoke.core.ui`. Composable dùng chung **không biết n
 | Server | `ui_error_server_title` "Server error" / "Lỗi máy chủ" | `ui_error_server_message` "Something went wrong on the server (%1$d)." / "Máy chủ gặp sự cố (%1$d)." |
 | Unknown | `ui_error_unknown_title` "Something went wrong" / "Đã xảy ra lỗi" | `ui_error_unknown_message` "Please try again." / "Vui lòng thử lại." |
 
-Strings chung khác: `ui_retry` Retry/Thử lại, `ui_offline_banner` "You're offline. Showing saved data." / "Bạn đang offline. Đang hiển thị dữ liệu đã lưu.", `ui_load_more_error` "Couldn't load more." / "Không tải thêm được."
+Strings chung khác: `ui_retry` Retry/Thử lại, `ui_loading` Loading/Đang tải (contentDescription của spinner), `ui_offline_banner` "You're offline. Showing saved data." / "Bạn đang offline. Đang hiển thị dữ liệu đã lưu.", `ui_load_more_error` "Couldn't load more." / "Không tải thêm được."
 
 ## 3. Quy tắc UI
 
-- Mọi text hiển thị và `contentDescription` lấy từ `strings.xml` trong `:translation` (`values/` English và `values-vi/` Tiếng Việt, key có tiền tố module); chuỗi không cần dịch ở `non-translation.xml`. Ngoại lệ duy nhất: dữ liệu (tên Pokémon, tên ability, số id) — format qua `PokemonFormat`.
-- Key string có tiền tố module: `designsystem_`, `ui_`, `home_`, `details_`, `favourite_`, `profile_`, `auth_`, `onboarding_`, `main_`, `debugtool_`.
+- Mọi text hiển thị và `contentDescription` lấy từ `strings.xml` trong `:translation` (`import com.khangtm.pokepoke.translation.R`) (`values/` English và `values-vi/` Tiếng Việt, key có tiền tố module); chuỗi không cần dịch ở `non-translation.xml`. Ngoại lệ duy nhất: dữ liệu (tên Pokémon, tên ability, số id) — format qua `PokemonFormat`.
+- Key string trong `:translation` có tiền tố module: `designsystem_`, `ui_`, `home_`, `details_`, `favourite_`, `profile_`, `auth_`, `onboarding_`, `main_`, `app_` (test của `:translation` kiểm tra). `:debugtool` có strings riêng trong module của nó, tiền tố `debugtool_`.
 - Mỗi screen có màu nền `surface`; nội dung dạng form (login, profile) giới hạn `maxContentWidth` và căn giữa trên màn rộng.
 - Edge-to-edge: `Scaffold` xử lý insets; không hardcode padding status bar.
 - Không dùng `Color(...)` trực tiếp trong feature, trừ bảng màu type ở `details:impl` (screens.md).

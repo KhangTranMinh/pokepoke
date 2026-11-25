@@ -54,7 +54,7 @@
 - [ ] **T14 — `:app` + `:feature:main`.** Đọc screens.md §1, deeplinks.md §1. `MainActivity`, splash, theme XML, manifest, locale config, Coil, base URL, `DeepLinkConfig`, `MainShell`, `NavDisplay` + list-detail. Tạm thời đăng ký entry placeholder cho `HomeNavKey` nếu home chưa có (xóa ở T17).
   Test: `MainShell` screenshot (bottom bar, rail ở `w841dp`, ẩn khi FullScreen); UI test chọn tab gọi `ResetTo`.
   DoD: `./gradlew :app:assembleDebug :app:assembleRelease :feature:main:impl:check :app:check`; cài lên emulator (nếu có) mở được app.
-- [ ] **T15 — `:feature:onboarding`.** Đọc screens.md §2, contracts.md §9. Repository, 2 use case, interceptor, screen, entry (tất cả internal).
+- [ ] **T15 — `:feature:onboarding`.** Đọc screens.md §2, contracts.md §9. Repository, 2 use case, interceptor, screen, entry (tất cả internal). Fix T09: thêm `var failWith: Throwable?` vào `FakeKeyValueStore` (như `FakeSecureStorage`, contracts.md §3) để test repository với lỗi storage → `Local.*`.
   Test: repository (FakeKeyValueStore), use case, ViewModel (Next / Skip / Finish → complete + execute pending, Finish khi Failure vẫn đi tiếp), interceptor (đã / chưa xem / Failure → Proceed, request chứa OnboardingNavKey), UI + screenshot 3 trang.
   DoD: `./gradlew :feature:onboarding:api:check :feature:onboarding:impl:check verifyRoborazziDebug`.
 - [ ] **T16 — `:feature:auth`.** Đọc screens.md §3, contracts.md §10. Repository, `LoginUseCase`, `TokenGenerator`, `Clock` (internal); `ObserveAuthStateUseCase`/`LogoutUseCase` (api) + `FakeAuthSession`; interceptor, `SessionCleaner` set, screen.
@@ -72,7 +72,7 @@
 
 ## Giai đoạn 5 — Debug & hoàn thiện
 
-- [ ] **T21 — `:debugtool`.** Đọc screens.md §8, plan.md §8. Test: interceptor ghi log (MockWebServer), ring buffer 500, che header nhạy cảm, đọc schema / rows / chặn câu lệnh không phải SELECT/PRAGMA (Robolectric với DB tạm), UI + screenshot các màn chính.
+- [ ] **T21 — `:debugtool`.** Đọc screens.md §8, plan.md §8. Thêm `implementation(projects.core.deeplink)` (Deeplink tester dùng `DeepLinkIntentFactory`). Test: interceptor ghi log (MockWebServer), ring buffer 500, che header nhạy cảm, đọc schema / rows / chặn câu lệnh không phải SELECT/PRAGMA (Robolectric với DB tạm), UI + screenshot các màn chính.
   DoD: `./gradlew :debugtool:check`, `./gradlew :app:assembleRelease` xanh và `verifyReleaseHasNoDebugTool` xanh; APK release không chứa class `com.khangtm.pokepoke.debugtool` (kiểm tra bằng `apkanalyzer dex packages` hoặc unzip + tìm).
 - [ ] **T22 — Test end-to-end trong `:app`.** Robolectric + Hilt (`HiltTestApplication`, `@TestInstallIn` thay `@BaseUrl` bằng MockWebServer với JSON mẫu, fake storage nếu cần). Kịch bản: lần đầu mở → onboarding → Home có list; bấm item khi chưa login → Login → Details; deeplink `pokepoke://pokemon/25` cold start chưa xem onboarding (đúng chuỗi ở deeplinks.md §3); deeplink `pokepoke://favourite` khi chưa login → tab Favourite với nút đăng nhập; logout xóa favourite; đổi ngôn ngữ giữ back stack.
   DoD: `./gradlew :app:testDebugUnitTest`.

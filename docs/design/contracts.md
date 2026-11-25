@@ -192,7 +192,9 @@ interface KeyValueStore {
 
 Core storage / securestorage / Retrofit service / Room DAO là **data source**: được phép ném exception. Chỉ Repository gọi chúng, qua `dataResultOf` / `asDataResult` (layers.md).
 
-testFixtures: `FakeKeyValueStoreFactory`, `FakeKeyValueStore` (in-memory `MutableStateFlow<Map<String, Any>>`).
+Luật cài đặt (impl): mỗi key chỉ giữ một giá trị một kiểu (put kiểu khác thay giá trị cũ); `observeXxx` đọc theo tên key rồi ép kiểu (khác kiểu → `null`); tên store khớp `[A-Za-z0-9_.-]+` và không bắt đầu bằng `secure_`; file ở `filesDir/datastore/<name>.preferences_pb`.
+
+testFixtures: `FakeKeyValueStoreFactory`, `FakeKeyValueStore` (in-memory `MutableStateFlow<Map<String, Any>>`, `hasBeenWritten` — `storeNames()` chỉ trả store đã ghi, `var failWith: Throwable?` → mọi thao tác ném lỗi để test nhánh `Local.*`), `KeyValueStoreContract` (bộ test chung chạy cho fake và impl).
 
 ## 4. `:core:securestorage:api`
 
@@ -217,7 +219,7 @@ interface SecureStorage {
 
 **impl**: DataStore Preferences file `secure_<name>.preferences_pb`; value lưu = Base64(`aead.encrypt(value.utf8, associatedData = key.utf8)`). `interface AeadProvider { fun aead(): Aead }` (internal trong impl) — bản thật: Tink `AeadConfig.register()`, `AndroidKeysetManager.Builder().withSharedPref(context, "pokepoke_tink_keyset", "pokepoke_tink_prefs").withKeyTemplate(KeyTemplates.get("AES256_GCM")).withMasterKeyUri("android-keystore://pokepoke_master_key").build().keysetHandle`. Unit test (Robolectric không có Android Keystore): `AeadProvider` test tạo keyset cleartext bằng `KeysetHandle.generateNew(KeyTemplates.get("AES256_GCM"))`. `KeyValueStoreFactory.storeNames()` phải **loại** file có tiền tố `secure_`.
 
-testFixtures: `FakeSecureStorageFactory`, `FakeSecureStorage`.
+testFixtures: `FakeSecureStorageFactory`, `FakeSecureStorage` (`hasBeenWritten`, `var failWith: Throwable?` → mọi thao tác ném lỗi), `SecureStorageContract` (bộ test chung chạy cho fake và impl).
 
 ## 5. `:core:navigation`
 

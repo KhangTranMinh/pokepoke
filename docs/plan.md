@@ -1,10 +1,12 @@
 # Poke Poke — Kế hoạch setup multi-module
 
-> Trạng thái: **đã chốt**, chưa implement. Xem yêu cầu gốc tại [requirements.md](requirements.md).
+> Trạng thái: **đã chốt**, đang implement theo [tasks.md](tasks.md) (tiến độ xem dấu `[x]`; lệch so với kế hoạch ghi ở [decisions.md](decisions.md)). Xem yêu cầu gốc tại [requirements.md](requirements.md).
 >
 > Chi tiết để implement: [design/contracts.md](design/contracts.md), [design/layers.md](design/layers.md), [design/screens.md](design/screens.md), [design/designsystem.md](design/designsystem.md), [design/deeplinks.md](design/deeplinks.md), [design/build.md](design/build.md); danh sách việc: [tasks.md](tasks.md).
 
-## 0. Hiện trạng
+## 0. Hiện trạng ban đầu (trước T01, chỉ để tham khảo)
+
+> Hiện tại: AGP 9.5.2, Gradle 9.6.0, Kotlin 2.4.21, compileSdk 37.1, đủ module ở mục 4 — version chuẩn ở build.md §1.
 
 - AGP 9.5.2, Gradle 9.6.0, Kotlin 2.2.10, daemon JVM toolchain 25.
 - Chỉ có module `:app`; `compileSdk`/`minSdk`/`targetSdk`, `versionCode`/`versionName` đang hardcode trong `app/build.gradle.kts`.
@@ -47,11 +49,12 @@ dependencies {
 | `pokepoke.android.application` | compileSdk/minSdk/targetSdk, JVM toolchain, buildTypes, version (mục 3) |
 | `pokepoke.android.library` | SDK, JVM, lint, thư viện unit test chung |
 | `pokepoke.android.compose` | Bật Compose, Compose BOM, tooling preview, Compose UI test (Robolectric), Roborazzi |
-| `pokepoke.android.feature.api` | library + `testFixtures` (chứa fake của các interface public) |
-| `pokepoke.android.feature.impl` | library + compose + hilt + `core:designsystem`, `core:ui`, `core:navigation` + thư viện test |
+| `pokepoke.android.feature.api` | library + `testFixtures` (chứa fake của các interface public) + `core:common-kotlin`, `core:navigation` |
+| `pokepoke.android.feature.impl` | library + compose + hilt + `core:designsystem`, `core:ui`, `core:common-kotlin`, `core:navigation`, `:translation` + thư viện test |
 | `pokepoke.hilt` | Hilt + KSP |
 | `pokepoke.room` | Room + KSP + schema export + thư viện test DAO |
-| `pokepoke.jvm.library` | Module Kotlin thuần (không phụ thuộc Android) |
+| `pokepoke.kotlin.serialization` | Plugin kotlinx-serialization + `kotlinx-serialization-json` |
+| `pokepoke.jvm.library` | Module Kotlin thuần (không phụ thuộc Android) + `java-test-fixtures` + Kover + check kiến trúc |
 | `pokepoke.kover` | Coverage từng module, có thể đặt ngưỡng tối thiểu từng module |
 
 ### 2.2. SDK / JVM version để trong version catalog
@@ -60,6 +63,7 @@ dependencies {
 # gradle/libs.versions.toml
 [versions]
 compileSdk = "37"
+compileSdkMinor = "1"   # compileSdk 37.1 — Compose UI của BOM 2026.11.01 yêu cầu
 minSdk = "30"
 targetSdk = "37"
 jvm = "21"
@@ -73,17 +77,18 @@ Convention plugin đọc qua `VersionCatalogsExtension`. Chỉ sửa một chỗ
 
 ### 2.3. Chặn vi phạm kiến trúc
 
-Check trong convention plugin, **build fail** nếu:
-- Một module `:impl` phụ thuộc vào `:impl` khác (chỉ `:app` được phép).
+Check trong convention plugin, **build fail** nếu (chi tiết: build.md §5):
+- Module nào ngoài `:app` phụ thuộc vào một module `:impl` hoặc `:debugtool`.
 - `:core:*` phụ thuộc vào `:data:*` hoặc `:feature:*`.
 - `:data:*` phụ thuộc vào `:feature:*`.
-- Bất kỳ module nào ngoài `:app` phụ thuộc vào `:debugtool`.
-- `:app` khai báo `:debugtool` bằng configuration khác `debugImplementation`, hoặc release runtime classpath chứa `:debugtool`.
+- `:debugtool` phụ thuộc vào `:data:*` hoặc `:feature:*`.
+- `:translation` phụ thuộc vào bất kỳ module nào.
+- Release runtime classpath của `:app` chứa `:debugtool` (`:app` chỉ khai báo `debugImplementation`).
 
 ## 3. Versioning: `version.properties`
 
 ```properties
-# version.properties (ở root, commit vào git)
+# version.properties (ở root, commit vào git) — ví dụ; giá trị hiện tại 1.0.0 / 1
 versionMajor=1
 versionMinor=2
 versionPatch=0
@@ -174,7 +179,8 @@ Phụ thuộc giữa các feature:
 - **Tách** cho core có implementation thay được hoặc cần contract trung lập: `storage`, `securestorage`. Module khác chỉ phụ thuộc `:api`; fake để trong `testFixtures` của `:api`.
 - **Không tách** `network` và `connectivity`: mọi module dùng network đều cần Retrofit / OkHttp nên `:api` thuần không che được gì; cài đặt đã `internal`.
 - **Không tách** `deeplink`: cài đặt chỉ dùng `java.net.URI` + Android framework (`PendingIntent` đã có trong chữ ký contract) + Hilt, chỉ có một cài đặt; `:api` cũng không thể là Kotlin thuần (`PendingIntent`, `NavRequest`) nên tách không được gì.
-- **Không tách** `navigation`: `NavigatorImpl` chỉ dùng thứ contract đã kéo (navigation3, Compose runtime, coroutines) + Hilt, chỉ có một cài đặt, và test dùng `FakeNavigator` trong testFixtures; `internal` đủ che cài đặt. Tiêu chí chung: chỉ tách `:api` khi `:impl` kéo thư viện nặng / dễ rò (DataStore, Tink, Room, Retrofit) hoặc có nhiều cài đặt. Tách sau nếu có nhiều implementation (giữ nguyên package, feature chỉ đổi dòng dependency).
+- **Không tách** `navigation`: `NavigatorImpl` chỉ dùng thứ contract đã kéo (navigation3, Compose runtime, coroutines) + Hilt, chỉ có một cài đặt, và test dùng `FakeNavigator` trong testFixtures; `internal` đủ che cài đặt.
+- **Tiêu chí chung:** chỉ tách `:api` khi `:impl` kéo thư viện nặng / dễ rò (DataStore, Tink, Room, Retrofit) hoặc có nhiều cài đặt. Module không tách sau này cần thì tách (giữ nguyên package, module dùng chỉ đổi dòng dependency).
 - **Kotlin/JVM thuần** cho `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `core:navigation` / `core:deeplink` giữ Android library (xem build.md §3).
 - **Không tách** `api`/`impl` cho `designsystem`, `ui`, `testing`; `common` tách theo nền tảng (`kotlin` / `android`) — code UI / tiện ích thuần, tách ra chỉ thêm module rỗng.
 
@@ -284,7 +290,7 @@ Dùng **Navigation 3** (đã chốt).
 
 ### 6.2. `core:navigation` — chỉ hạ tầng
 
-- `NavKey`, `Navigator` (navigate / back / replace).
+- `NavKey`, `Navigator`: `execute(NavRequest)` với `Push` / `ReplaceTop` / `ResetTo` (đi qua interceptor), `goBack()` (không qua interceptor), `backStack` (Compose state). Chữ ký chuẩn: contracts.md §5.
 - Contract `EntryProviderInstaller`: feature đăng ký màn hình cho key của mình.
 - Contract `NavigationInterceptor`: chặn hoặc chuyển hướng một lần navigate.
 - Contract `TopLevelDestination` (icon, label, thứ tự, key): feature đăng ký tab.
@@ -384,12 +390,13 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
 |---|---|
 | **Network log** — request/response, header, body, thời gian, status | Đóng góp một OkHttp `Interceptor` vào hook `Set<Interceptor>` của `core:network`; lưu ring buffer trong bộ nhớ (vd. 500 request gần nhất) |
 | **Local DB** — liệt kê DB, bảng, xem dữ liệu, tìm kiếm / chạy câu `SELECT` | Duyệt `context.databaseList()`, mở **read-only** bằng `SQLiteDatabase`; đọc schema từ `sqlite_master` → không cần biết entity của feature |
-| **Local storage** — xem key/value | Hàm generic `observeAll()` trong `core:storage:api`; `core:securestorage` chỉ hiện key, value bị che (bấm để hiện) |
+| **Local storage** — xem key/value | Hàm generic `observeAll()` trong `core:storage:api`; `core:securestorage:api` chỉ hiện key (`observeKeys()`), value bị che (bấm để hiện) |
+| **Deeplink tester** — mở URI, gửi notification | `DeepLinkIntentFactory` của `core:deeplink` |
 
 ### 8.2. Độc lập & chỉ debug
 
 - `:app` khai báo `debugImplementation(projects.debugtool)` — release build không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này.
-- **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `network`, `storage:api`, `securestorage:api`).
+- **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `common-kotlin`, `network`, `storage:api`, `securestorage:api`, `deeplink`).
 - Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng (khai báo `@Multibinds` trong `core:network`).
 - **Một module duy nhất, không tách `api`/`impl`**: không ai gọi vào debugtool nên không có contract để public.
 - **Điểm vào: nút con bọ 🐞 overlay trên mọi activity**
@@ -419,8 +426,9 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 ## 10. Testing
 
 - Mỗi module (core, data, feature, debugtool) có `src/test` riêng, và `src/androidTest` khi cần. **Không** có module chứa test của module khác.
-- `:core:testing` chỉ là thư viện tiện ích: `MainDispatcherRule`, helper Turbine / Compose test.
-- Fake của interface public nằm trong `testFixtures` của module `:api` tương ứng (vd. `FakePokemonRepository` trong `data:pokemon:api`, `FakeNetworkMonitor` trong `core:connectivity`); module khác dùng qua `testImplementation(testFixtures(projects.data.pokemon.api))`.
+- `:core:testing` chỉ là thư viện tiện ích (Android library; module JVM thuần không dùng được): `MainDispatcherRule`, `TestDispatchers`, `runComposeScreenshot` / `runComposeScreenshotLightDark`, `ScreenshotDevices`.
+- Fake của interface public nằm trong `testFixtures` của module chứa contract — module `:api`, hoặc chính module nếu không tách (vd. `FakePokemonRepository` trong `data:pokemon:api`, `FakeNetworkMonitor` trong `core:connectivity`, `FakeNavigator` trong `core:navigation`); module khác dùng qua `testImplementation(testFixtures(projects.data.pokemon.api))`.
+- Core có cả fake lẫn cài đặt thật thì thêm **contract test** trừu tượng trong testFixtures (`KeyValueStoreContract`, `SecureStorageContract`, `NavigatorContract`): cùng bộ test chạy cho fake và cho cài đặt thật, bảo đảm fake hành xử như thật.
 - Convention plugin tự thêm thư viện test theo loại module:
 
 | Loại module / layer | Loại test |
@@ -435,10 +443,10 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 
 ## 11. DI: Hilt (đã chốt)
 
-- Binding nằm trong `:impl`, chỉ tổng hợp ở `:app`.
+- Binding nằm trong `:impl`, hoặc trong Hilt module `internal` của module core không tách (`network`, `connectivity`, `navigation`, `deeplink`, `common-android`); chỉ tổng hợp ở `:app`.
 - Multibinding cho `EntryProviderInstaller`, `NavigationInterceptor`, `TopLevelDestination`, `DeepLinkHandler`, `Interceptor` (network).
 
-## 12. Các thay đổi nhỏ đi kèm
+## 12. Các thay đổi nhỏ đi kèm (đã làm ở T01–T03)
 
 - **`settings.gradle.kts`**: thêm `includeBuild("build-logic")` và `enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")` → khai báo dependency bằng `projects.data.pokemon.api` thay vì chuỗi.
 - **`gradle.properties`**: bật `org.gradle.parallel=true`, `org.gradle.caching=true`.
@@ -448,7 +456,7 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
   - Thêm `[plugins]` cho các convention plugin.
 - **AGP 9** đã tích hợp sẵn Kotlin → không cần plugin `kotlin-android`; convention plugin chỉ thêm compose compiler, ksp, hilt.
 
-## 13. Thứ tự implement
+## 13. Thứ tự implement (đã làm ở T01–T03; các bước tiếp theo ở tasks.md)
 
 1. Tạo `build-logic` với các convention plugin (kèm check kiến trúc), chuyển `:app` sang dùng.
 2. Thêm `version.properties` và logic đọc version.

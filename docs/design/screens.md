@@ -46,7 +46,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
   - `entryProvider = entryProvider { installers.forEach { it.install(this) } }`.
 - Manifest: `MainActivity` `launchMode="singleTask"`, `configChanges="orientation|screenSize|screenLayout|smallestScreenSize"`, theme `Theme.PokePoke.Starting`, intent-filter theo deeplinks.md; `android:enableOnBackInvokedCallback="true"`; service `androidx.appcompat.app.AppLocalesMetadataHolderService` (`enabled=false`, `exported=false`, meta-data `autoStoreLocales=true`).
 - Locale: `res/resources.properties` chứa `unqualifiedResLocale=en`; `androidResources.generateLocaleConfig = true`.
-- `app_name` = "PokePoke" (cả en/vi).
+- `app_name` = "PokePoke" trong `translation/src/main/res/values/non-translation.xml` (không dịch; hiện là "Poke Poke" chuyển từ project gốc ở T07a — T14 đổi).
 - Theme XML: `Theme.PokePoke.Starting` (parent `Theme.SplashScreen`, `windowSplashScreenBackground` = primary light `#B8401F` / dark `#8F2A0B` trong `values-night`, `windowSplashScreenAnimatedIcon` = `@drawable/ic_launcher_foreground`, `postSplashScreenTheme` = `@style/Theme.PokePoke`).
 
 ### 1.2. `MainShell` (`:feature:main:impl`)

@@ -8,6 +8,7 @@
 [versions]
 # SDK / JVM
 compileSdk = "37"
+compileSdkMinor = "1"   # compileSdk 37.1: Compose UI 1.13.0 (BOM 2026.11.01) yêu cầu; plugin dùng release(compileSdk) { minorApiLevel = compileSdkMinor }
 minSdk = "30"
 targetSdk = "37"
 jvm = "21"
@@ -37,6 +38,7 @@ startup = "1.2.0"
 
 # Kotlin / network / image / security
 coroutines = "1.11.0"
+javaxInject = "1"        # @Qualifier / @Inject cho module Kotlin/JVM thuần (core:common-kotlin)
 serialization = "1.13.0"
 retrofit = "3.0.0"
 okhttp = "5.5.1"
@@ -78,6 +80,7 @@ robolectric = "4.18.1"
 | androidx-startup | `androidx.startup:startup-runtime` |
 | androidx-room-runtime / ktx / compiler / testing | `androidx.room:*` |
 | hilt-android / hilt-compiler / hilt-android-testing | `com.google.dagger:*` |
+| javax-inject | `javax.inject:javax.inject` |
 | kotlinx-coroutines-core / android / test | `org.jetbrains.kotlinx:kotlinx-coroutines-*` |
 | kotlinx-serialization-json | `org.jetbrains.kotlinx:kotlinx-serialization-json` |
 | retrofit / retrofit-converter-kotlinx-serialization | `com.squareup.retrofit2:retrofit`, `converter-kotlinx-serialization` |
@@ -101,7 +104,7 @@ robolectric = "4.18.1"
 | room | `androidx.room` | room |
 | kover | `org.jetbrains.kotlinx.kover` | kover |
 | roborazzi | `io.github.takahirom.roborazzi` | roborazzi |
-| pokepoke-* | convention plugin (mục 3) | — |
+| pokepoke-* | convention plugin (mục 3) | `unspecified` |
 
 ### 1.3. Xử lý khi combo version không build được (không hỏi lại, làm theo thứ tự)
 
@@ -136,7 +139,7 @@ include(":app", ":debugtool", ":core:common-kotlin", ":core:common-android", ...
 | Plugin id | Class | Áp dụng / cấu hình |
 |---|---|---|
 | `pokepoke.android.application` | `AndroidApplicationConventionPlugin` | `com.android.application`; SDK từ catalog; `jvmToolchain(jvm)`; version từ `version.properties` (mục 4); buildTypes `debug` (`applicationIdSuffix = ".debug"`, `versionNameSuffix = "-debug"`) và `release` (giữ `optimization { enable = true }` hiện có; ký bằng debug keystore tạm thời); `buildFeatures.buildConfig = true`; `androidResources.generateLocaleConfig = true`; task `verifyReleaseHasNoDebugTool` (mục 5) |
-| `pokepoke.android.library` | `AndroidLibraryConventionPlugin` | `com.android.library`; SDK; `jvmToolchain(jvm)`; `testOptions.unitTests.isIncludeAndroidResources = true`; test deps chung (junit, mockk, turbine, coroutines-test, robolectric, androidx-test-junit, `testImplementation(project(":core:testing"))` trừ chính `:core:testing`); áp dụng `pokepoke.kover`; task `verifyModuleDependencies` (mục 5) |
+| `pokepoke.android.library` | `AndroidLibraryConventionPlugin` | `com.android.library`; SDK; `jvmToolchain(jvm)`; `testOptions.unitTests.isIncludeAndroidResources = true`; test deps chung (junit, mockk, turbine, coroutines-test, robolectric, androidx-test-junit, `testImplementation(project(":core:testing"))` trừ `:core:testing` và `:translation`); áp dụng `pokepoke.kover`; task `verifyModuleDependencies` (mục 5) |
 | `pokepoke.android.compose` | `AndroidComposeConventionPlugin` | `org.jetbrains.kotlin.plugin.compose`; `buildFeatures.compose = true`; BOM cho implementation/testImplementation/androidTestImplementation; ui, ui-graphics, foundation, material3, material-icons-core, ui-tooling-preview; `debugImplementation` ui-tooling, ui-test-manifest; `testImplementation` ui-test-junit4; Roborazzi plugin + roborazzi, roborazzi-compose, roborazzi-junit-rule; `roborazzi { outputDir = file("src/test/screenshots") }` |
 | `pokepoke.android.feature.api` | `AndroidFeatureApiConventionPlugin` | `pokepoke.android.library`; `android.testFixtures.enable = true`; `api(core:common-kotlin)`, `api(core:navigation)`; `kotlinx-coroutines-core` |
 | `pokepoke.android.feature.impl` | `AndroidFeatureImplConventionPlugin` | `pokepoke.android.library` + `pokepoke.android.compose` + `pokepoke.hilt`; `implementation` core:designsystem, core:ui, core:common-kotlin, core:navigation, translation, lifecycle-runtime-compose, lifecycle-viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive, material3-adaptive-layout, material3-adaptive-navigation3; `testImplementation(testFixtures(core:navigation))` |
@@ -200,7 +203,10 @@ Thêm:
 org.gradle.parallel=true
 org.gradle.caching=true
 org.gradle.jvmargs=-Xmx4g -Dfile.encoding=UTF-8
+ksp.incremental=false   # KSP 2.3.14 + AGP 9 lỗi "Number of loaded files in snapshots differs" (decisions.md, T08)
 ```
+
+Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=official` có sẵn.
 
 ## 9. Lệnh kiểm tra chuẩn
 
