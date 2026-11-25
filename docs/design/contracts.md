@@ -2,7 +2,7 @@
 
 > **Nguồn chuẩn** cho mọi type public trong module `:api` và module không tách (`core:common-kotlin`, `core:ui`...). Implement đúng tên, package, chữ ký. Được phép thêm member `internal`/`private`; **không** đổi chữ ký public mà không ghi vào [`docs/decisions.md`](../decisions.md).
 >
-> Quy ước package = namespace module: `com.khangtm.pokepoke.<nhóm>.<tên>[.api|.impl]`. Ví dụ `:core:navigation:api` → `com.khangtm.pokepoke.core.navigation.api`.
+> Quy ước package = namespace module: `com.khangtm.pokepoke.<nhóm>.<tên>[.api|.impl]`. Ví dụ `:core:storage:api` → `com.khangtm.pokepoke.core.storage.api`; module không tách như `:core:navigation` → `com.khangtm.pokepoke.core.navigation`.
 
 ---
 
@@ -219,10 +219,12 @@ interface SecureStorage {
 
 testFixtures: `FakeSecureStorageFactory`, `FakeSecureStorage`.
 
-## 5. `:core:navigation:api`
+## 5. `:core:navigation`
+
+Một module Android library **không tách `api`/`impl`** (cùng lý do `:core:network`, plan.md §4.3): cài đặt không kéo thêm thư viện nào ngoài Hilt và chỉ có một cài đặt. Contract bên dưới là public; `NavigatorImpl` và Hilt module là `internal`. Feature và `:app` đều `implementation(projects.core.navigation)`.
 
 ```kotlin
-package com.khangtm.pokepoke.core.navigation.api
+package com.khangtm.pokepoke.core.navigation
 
 import androidx.navigation3.runtime.NavKey     // api(navigation3-runtime)
 
@@ -273,12 +275,12 @@ interface TopLevelDestination {
 }
 ```
 
-Luật của `Navigator` (impl, `@ActivityRetainedScoped`):
+Luật của `Navigator` (`internal class NavigatorImpl`, `@ActivityRetainedScoped`, package `com.khangtm.pokepoke.core.navigation`, Hilt module ở `...core.navigation.di`):
 - Interceptor sắp theo `priority`; chạy lần lượt; **Redirect đầu tiên thắng** và request redirect **không** bị intercept lại (tránh vòng lặp). Request được tiếp tục sau này (vd. sau login) đi qua `execute` lại nên vẫn bị intercept bình thường.
 - `execute` xử lý tuần tự bằng `Mutex` trong `CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)` của retained component; `backStack` là `SnapshotStateList`.
 - Stack chỉ giữ trong bộ nhớ (sống qua config change / đổi ngôn ngữ). Process death → mở lại từ đầu (chấp nhận).
 
-testFixtures: `FakeNavigator` (ghi lại `requests: List<NavRequest>`, `backCount`, áp dụng request trực tiếp không interceptor).
+testFixtures: `FakeNavigator` (ghi lại `requests: List<NavRequest>`, `backCount`, áp dụng request trực tiếp không interceptor), `NavigatorContract` (bộ test chung, chạy cho `FakeNavigator` và `NavigatorImpl`), `TestNavKey(id)`. Module khác dùng `testImplementation(testFixtures(projects.core.navigation))`.
 
 ## 6. `:core:deeplink:api`
 
