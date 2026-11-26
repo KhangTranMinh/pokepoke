@@ -302,7 +302,17 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 - **Chỉ build `qaDebug` + `qaRelease`** (không cần khóa release; `qaRelease` kiểm tra R8 / minify). `check` vẫn chạy unit test mọi variant của `:app` và mọi module, `verifyReleaseHasNoDebugTool`, `verifyModuleDependencies`, lint.
 - Không có secret nào. Khi cần CI build `prodRelease`: tạo `configs/signing/release.*` từ GitHub Secrets trong một job riêng (chưa làm).
 
-**Ruleset của `main`** (tạo bằng GitHub API sau khi workflow đã chạy ít nhất một lần):
+**Hai nơi cấu hình, nối với nhau bằng tên check `build`:**
+
+| Nơi | Ở đâu | Quyết định |
+|---|---|---|
+| `.github/workflows/ci.yml` | trong code | CI **chạy gì**, khi nào; mỗi lần chạy tạo check `build` (xanh / đỏ) trên commit / PR. Không tự chặn gì |
+| Ruleset `protect-main` (id `28142956`) | GitHub: Settings → Rules → Rulesets | **Có được merge không**: bắt buộc PR, check `build` xanh... |
+| Cài đặt merge | GitHub: Settings → General → Pull Requests | Chỉ Rebase and merge, tự xóa branch sau merge |
+
+⚠️ **Đổi tên job `build` trong `ci.yml` → phải sửa ruleset cùng lúc**; nếu không, ruleset chờ một check không bao giờ xuất hiện → mọi PR bị khóa. Ruleset / cài đặt không nằm trong code: đổi qua web hoặc `gh api repos/KhangTranMinh/pokepoke/rulesets/28142956` (token cần quyền Administration).
+
+**Ruleset `protect-main`** (đã tạo 2026-11-26 bằng GitHub API):
 - Bắt buộc PR, **0 approval** (PR do agent tạo bằng token của user → tác giả là user, GitHub không cho tự approve; "review" = user bấm merge).
 - Bắt buộc status check `build` xanh, branch phải cập nhật theo `main` (strict).
 - Cấm force push, cấm xóa branch; **không có bypass** (kể cả admin — token của agent mang quyền admin).

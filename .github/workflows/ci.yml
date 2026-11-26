@@ -14,6 +14,9 @@ permissions:
   contents: read
 
 jobs:
+  # ⚠️ `build` (job id + name) là status check BẮT BUỘC của ruleset `protect-main` trên GitHub
+  # (Settings → Rules → Rulesets). Đổi tên job → phải sửa ruleset cùng lúc, nếu không mọi PR bị khóa
+  # vĩnh viễn (ruleset chờ check `build` không bao giờ xuất hiện). Xem docs/design/build.md §10.
   build:
     name: build
     runs-on: macos-latest
