@@ -30,6 +30,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
                 versionName = version.name
             }
             buildFeatures.buildConfig = true
+            // Robolectric needs the merged manifest / resources for :app unit tests.
+            testOptions.unitTests.isIncludeAndroidResources = true
             androidResources.generateLocaleConfig = true
             val sharedDebug = signingConfigs.create("sharedDebug") {
                 storeFile = debugSigning.storeFile

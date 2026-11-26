@@ -44,8 +44,8 @@ abstract class VerifyReleaseHasNoDebugToolTask : DefaultTask() {
     fun verify() {
         if (":debugtool" in releaseProjectPaths.get()) {
             throw GradleException(
-                "prodRelease runtime classpath contains :debugtool. " +
-                    "Declare it with debugImplementation only (docs/design/build.md §5).",
+                "A prod variant (prodDebug / prodRelease) runtime classpath contains :debugtool. " +
+                    "Declare it with devImplementation / qaImplementation only (docs/design/build.md §4a, §5).",
             )
         }
     }
@@ -75,13 +75,18 @@ internal fun Project.registerVerifyModuleDependencies() {
 internal fun Project.registerVerifyReleaseHasNoDebugTool() {
     val verify = tasks.register<VerifyReleaseHasNoDebugToolTask>("verifyReleaseHasNoDebugTool") {
         group = "verification"
-        description = "Fails when :debugtool is on the prodRelease runtime classpath."
+        description = "Fails when :debugtool is on the prodDebug or prodRelease runtime classpath."
     }
     afterEvaluate {
-        val root = configurations.getByName("prodReleaseRuntimeClasspath").incoming.resolutionResult.rootComponent
-        verify.configure { releaseProjectPaths.set(root.map { collectProjectPaths(it) }) }
+        // The prod flavor never has :debugtool (dev / qa have it on purpose), in either build type.
+        fun root(name: String) = configurations.getByName(name).incoming.resolutionResult.rootComponent
+        val paths = root("prodDebugRuntimeClasspath").zip(root("prodReleaseRuntimeClasspath")) { debug, release ->
+            collectProjectPaths(debug) + collectProjectPaths(release)
+        }
+        verify.configure { releaseProjectPaths.set(paths) }
     }
-    tasks.matching { it.name in setOf("check", "assembleProdRelease", "bundleProdRelease") }.configureEach { dependsOn(verify) }
+    val prodTasks = setOf("check", "assembleProdDebug", "assembleProdRelease", "bundleProdDebug", "bundleProdRelease")
+    tasks.matching { it.name in prodTasks }.configureEach { dependsOn(verify) }
 }
 
 private fun collectProjectPaths(root: ResolvedComponentResult): Set<String> {

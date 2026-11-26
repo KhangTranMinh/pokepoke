@@ -43,19 +43,25 @@ dependencies {
     implementation(projects.feature.favourite.impl)
     implementation(projects.feature.profile.api)
     implementation(projects.feature.profile.impl)
-    debugImplementation(projects.debugtool)
+    // The debug tool belongs to the dev / qa environments, never to prod (docs/design/build.md §4a, §5).
+    "devImplementation"(projects.debugtool)
+    "qaImplementation"(projects.debugtool)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.navigation3.runtime)
+    implementation(libs.androidx.navigation3.ui)
+    implementation(libs.androidx.compose.material3.adaptive.navigation3)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(projects.core.testing)
+    testImplementation(testFixtures(projects.core.navigation))
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.espresso.core)
-}
-
-// The qaRelease configuration is created by AGP after the flavors / build types are known (not yet at this point),
-// so the debugtool dependency is attached as soon as that configuration appears.
-configurations.configureEach {
-    if (name == "qaReleaseImplementation") {
-        dependencies.add(project.dependencies.create(projects.debugtool))
-    }
 }

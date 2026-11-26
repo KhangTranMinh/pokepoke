@@ -22,4 +22,13 @@
     <string name="ui_error_server_message">Something went wrong on the server (%1$d).</string>
     <string name="ui_error_unknown_title">Something went wrong</string>
     <string name="ui_error_unknown_message">Please try again.</string>
+
+    <!-- Tab labels. Added in T14 for the MainShell tests; the tab destinations (T17 / T18 / T20) use them. -->
+    <string name="home_tab">Home</string>
+    <string name="favourite_tab">Favourites</string>
+    <string name="profile_tab">Me</string>
+
+    <!-- app_ -->
+    <!-- Temporary Home placeholder (T14); removed in T17 together with HomePlaceholder. -->
+    <string name="app_home_placeholder">Home (temporary screen)</string>
 </resources>

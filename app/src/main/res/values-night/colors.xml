@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash background = primary of the app theme (dark). -->
+    <color name="splash_background">#8F2A0B</color>
+</resources>
