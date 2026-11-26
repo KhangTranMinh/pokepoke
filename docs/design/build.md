@@ -198,6 +198,44 @@ Cấu hình trong `pokepoke.android.application` (module library **không** có 
 - Đọc file qua `providers.fileContents(...)` (configuration cache). **Thiếu `release.properties` / `release.keystore` không được làm hỏng các variant khác**: chỉ task của `prodRelease` (`assembleProdRelease`, `bundleProdRelease`, `packageProdRelease`...) fail với message "Thiếu configs/signing/release.properties — chỉ cần cho prodRelease". CI sau này tạo file này từ secret.
 - `.gitignore` (đã có): `/configs/signing/release.*` và ngoại lệ `!/configs/signing/debug.keystore` (luật `*.keystore` chặn mọi keystore khác).
 
+#### 4a.1. Signing chạy thế nào trong vòng đời Gradle
+
+Code: `build-logic/convention/.../AppSigning.kt` (`signingConfigInfo`) và `AndroidApplicationConventionPlugin.kt`.
+
+Gradle build qua 3 pha; signing release được thiết kế để **chỉ đọc file ở pha 3, và chỉ khi cần**:
+
+```
+1. Initialization   settings.gradle.kts
+2. Configuration    áp plugin → chạy build script → AGP tạo variant → cấu hình task
+3. Execution        chạy các task trong task graph (compile, package, sign...)
+```
+
+| Code | Chạy khi nào | Làm gì |
+|---|---|---|
+| `signingConfigInfo("debug", …).get()` | Pha 2, lúc áp plugin | Đọc **ngay** `debug.properties` (luôn có vì được commit) → tạo DSL `signingConfigs.create("sharedDebug")` |
+| `buildTypes { debug/release { signingConfig = sharedDebug } }` | Pha 2, lúc áp plugin | Mặc định **mọi** variant ký bằng khóa debug (kể cả `qaRelease`) |
+| `signingConfigInfo("release", …)` (không `.get()`) | Pha 2, lúc áp plugin | Chỉ tạo `Provider<SigningConfigInfo>` — **chưa đọc file** |
+| `extensions.configure<ApplicationAndroidComponentsExtension> { … }` | Pha 2, ngay lúc áp plugin | Lấy extension `androidComponents` (Variant API của AGP) và **chỉ đăng ký callback** |
+| `beforeVariants(selector().withFlavor("env" to "dev").withBuildType("release")) { it.enable = false }` | Pha 2, sau khi `app/build.gradle.kts` chạy xong, lúc AGP **sắp tạo** variant | `selector()` khớp mọi variant → lọc flavor `dev` + build type `release` = `devRelease`; `it` là `VariantBuilder`, `enable = false` → AGP không tạo variant, không có task `assembleDevRelease` |
+| `onVariants(selector().withFlavor("env" to "prod").withBuildType("release")) { variant -> … }` | Pha 2, ngay sau khi AGP **đã tạo** variant, trước khi tạo task | `variant` là `ApplicationVariant` đã gộp DSL (lúc này `signingConfig` = `sharedDebug`); mọi thuộc tính là `Property` / `Provider` |
+| `variant.signingConfig.from(releaseSigning)` | Pha 2 | **Nối** provider release vào `prodRelease` (thay `sharedDebug`) — vẫn chưa đọc file |
+| Thân provider (`providers.fileContents(...)` → parse → kiểm tra key / `storeFile` → `SigningConfigInfo` hoặc ném `GradleException`) | Khi Gradle cần giá trị thật: task của `prodRelease` (`validateSigningProdRelease`, `packageProdRelease`...) nằm trong task graph — lúc lưu configuration cache hoặc lúc task chạy | Đọc `release.properties`; thiếu file → "Thiếu configs/signing/release.properties — chỉ cần cho prodRelease"; thiếu key → "thiếu key '…'" |
+
+Ví dụ:
+
+| Lệnh | Task graph có task `prodRelease`? | Đọc `release.properties`? | Không có file release |
+|---|---|---|---|
+| `./gradlew :app:assembleDevDebug` / `:app:assembleQaRelease` | không | không | ✅ xanh |
+| `./gradlew :app:assembleProdRelease` | có | có | ❌ fail, message rõ ràng |
+| `./gradlew assembleRelease` (= `qaRelease` + `prodRelease`) | có | có | ❌ fail |
+
+Vì sao không dùng cách "chuẩn" `signingConfigs.release { … }` trong DSL / gán signing ở flavor `prod`:
+- DSL `signingConfigs` cần giá trị (mật khẩu) **lúc cấu hình**; Gradle cấu hình mọi variant mỗi lần build → máy không có `release.properties` sẽ hỏng cả `assembleDevDebug`.
+- `signingConfig` của build type thắng của flavor → đặt ở flavor `prod` không có tác dụng với `prodRelease` (build type `release` đã gán `sharedDebug`).
+- `providers.fileContents` là input của configuration cache: sửa file `.properties` → cache tự làm mới.
+
+Thay khóa release: chỉ thay `configs/signing/release.keystore` + sửa `release.properties`, không sửa code; kiểm tra `./gradlew :app:assembleProdRelease` rồi `apksigner verify --print-certs` (SHA-256 phải khác bản `qaRelease`). `storeType = "jks"` vẫn đọc được keystore PKCS12 do `keytool` mới tạo.
+
 **`:debugtool`** gắn theo **môi trường**, không theo build type: `:app` khai báo `"devImplementation"(projects.debugtool)` + `"qaImplementation"(projects.debugtool)` (configuration của flavor có sẵn từ khi khai báo flavor, gọi trực tiếp được) → có ở `devDebug`, `qaDebug`, `qaRelease`; **không bao giờ** có ở `prodDebug`, `prodRelease`.
 
 ## 5. Check kiến trúc

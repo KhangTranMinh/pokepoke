@@ -8,11 +8,16 @@ import java.io.File
 import java.util.Properties
 
 /**
- * Lazy reader of `configs/signing/<name>.properties` (docs/design/build.md §4a).
+ * Lazy reader of `configs/signing/<name>.properties` (docs/design/build.md §4a, §4a.1).
  *
- * The file is read through `providers.fileContents` (configuration-cache input). Nothing is read or
- * validated until the returned provider is queried, so a missing file only fails whoever asks for it.
- * `storeFile` is relative to `configs/signing/`.
+ * - Trả về một `Provider` lười: gọi hàm này **không** đọc file nào. Chỉ khi có ai query provider
+ *   (`.get()`, hoặc Gradle query khi cần giá trị) thì file mới được đọc và kiểm tra.
+ * - Với release, provider chỉ bị query khi task cần nó nằm trong task graph (ví dụ `packageProdRelease`),
+ *   lúc lưu configuration cache hoặc lúc task chạy. Nhờ vậy `assembleDevDebug` không cần file release.
+ * - File đọc qua `providers.fileContents(...)` nên là input của configuration cache: sửa file thì cache làm mới.
+ * - Lỗi ném ra khi query: thiếu file (hoặc file rỗng), thiếu key trong `.properties`, hoặc `storeFile` không tồn tại.
+ * - `storeFile` là đường dẫn tương đối với `configs/signing/` (đường dẫn tuyệt đối vẫn được chấp nhận).
+ * - `storeType = "jks"` vẫn đọc được keystore PKCS12 do `keytool` mới tạo.
  */
 internal fun Project.signingConfigInfo(name: String, requiredFor: String): Provider<SigningConfigInfo> {
     val dir = rootProject.layout.projectDirectory.dir("configs/signing")
