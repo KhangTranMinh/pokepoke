@@ -1,0 +1,20 @@
+# Config theo môi trường (không bí mật) - docs/design/build.md §4b.
+# Mỗi key thành field BuildConfig (kiểu theo TOML: chuỗi / số nguyên / true|false) và manifest placeholder ${KEY}.
+# Giá trị flavor = [common] + phần ghi đè của flavor; ba flavor phải có cùng bộ key.
+
+[common]
+BASE_URL = "https://pokeapi.co/api/v2/"
+
+# Deeplink theo môi trường (docs/design/deeplinks.md §1). Tạm thời dev / qa gắn tên môi trường vào scheme và host
+# để các bản cài song song không tranh link với nhau; prod giữ giá trị gốc.
+[dev]
+DEEPLINK_SCHEME = "pokepoke-dev"
+DEEPLINK_HOST = "dev.pokepoke.com"
+
+[qa]
+DEEPLINK_SCHEME = "pokepoke-qa"
+DEEPLINK_HOST = "qa.pokepoke.com"
+
+[prod]
+DEEPLINK_SCHEME = "pokepoke"
+DEEPLINK_HOST = "pokepoke.com"

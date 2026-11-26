@@ -248,7 +248,7 @@ Giá trị khác nhau giữa dev / qa / prod (URL, cờ, secret) là **dữ li�
 |---|---|---|
 | `config.toml` | **commit** | giá trị không bí mật |
 | `secrets.example.toml` | **commit** | danh sách key secret bắt buộc, giá trị `""` (mẫu cho người mới / CI) |
-| `secrets.toml` | **gitignore** (`/configs/env/secrets.toml`), không bao giờ commit / in ra | giá trị secret thật |
+| `secrets.toml` | **gitignore** (`/configs/env/secrets.toml`), không bao giờ commit / in ra | giá trị secret thật. Máy mới: `cp configs/env/secrets.example.toml configs/env/secrets.toml` rồi điền giá trị |
 
 ```toml
 # configs/env/config.toml

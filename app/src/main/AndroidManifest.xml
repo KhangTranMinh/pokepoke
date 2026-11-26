@@ -26,14 +26,14 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Deep links: docs/design/deeplinks.md §1 -->
+            <!-- Deep links: docs/design/deeplinks.md §1. Scheme / host theo flavor từ configs/env/config.toml (manifest placeholder). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="pokepoke" />
+                <data android:scheme="${DEEPLINK_SCHEME}" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -42,7 +42,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="pokepoke.com"
+                    android:host="${DEEPLINK_HOST}"
                     android:scheme="https" />
             </intent-filter>
         </activity>
