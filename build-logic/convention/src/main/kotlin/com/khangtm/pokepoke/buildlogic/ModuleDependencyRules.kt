@@ -3,6 +3,8 @@ package com.khangtm.pokepoke.buildlogic
 /** Architecture rules (docs/design/build.md §5), kept free of Gradle types so they can be unit tested. */
 internal object ModuleDependencyRules {
 
+    private const val BUSINESS_DATA = ":business:data"
+
     private fun isImpl(path: String) = path.endsWith(":impl") || path.contains(":impl:")
     private fun isDebugTool(path: String) = path == ":debugtool" || path.startsWith(":debugtool:")
     private fun inGroup(path: String, group: String) = path.startsWith(":$group:")
@@ -24,15 +26,16 @@ internal object ModuleDependencyRules {
         if (module != ":app") {
             if (isImpl(dependency)) return "only :app may depend on :impl modules"
             if (isDebugTool(dependency)) return "only :app may depend on :debugtool"
+            if (dependency == BUSINESS_DATA) return "only :app may depend on $BUSINESS_DATA (so Hilt can collect its bindings)"
         }
-        if (inGroup(module, "core") && (inGroup(dependency, "data") || inGroup(dependency, "feature"))) {
-            return ":core modules must not depend on :data or :feature modules"
+        if (inGroup(module, "core") && (inGroup(dependency, "business") || inGroup(dependency, "feature"))) {
+            return ":core modules must not depend on :business or :feature modules"
         }
-        if (inGroup(module, "data") && inGroup(dependency, "feature")) {
-            return ":data modules must not depend on :feature modules"
+        if (inGroup(module, "business") && inGroup(dependency, "feature")) {
+            return ":business modules must not depend on :feature modules"
         }
-        if (isDebugTool(module) && (inGroup(dependency, "data") || inGroup(dependency, "feature"))) {
-            return ":debugtool must not depend on :data or :feature modules"
+        if (isDebugTool(module) && (inGroup(dependency, "business") || inGroup(dependency, "feature"))) {
+            return ":debugtool must not depend on :business or :feature modules"
         }
         return null
     }

@@ -28,20 +28,33 @@ class ModuleDependencyRulesTest {
     }
 
     @Test
-    fun `core must not depend on data or feature`() {
-        assertEquals(2, violations(":core:ui", ":data:pokemon:api", ":feature:home:api").size)
+    fun `core must not depend on business or feature`() {
+        assertEquals(3, violations(":core:ui", ":business:domain", ":business:data", ":feature:home:api").size)
         assertTrue(violations(":core:ui", ":core:designsystem", ":core:common-kotlin").isEmpty())
     }
 
     @Test
-    fun `data must not depend on feature but may depend on core`() {
-        assertEquals(1, violations(":data:pokemon:impl", ":feature:home:api").size)
-        assertTrue(violations(":data:pokemon:impl", ":data:pokemon:api", ":core:storage:api").isEmpty())
+    fun `business must not depend on feature but may depend on core`() {
+        assertEquals(1, violations(":business:data", ":feature:home:api").size)
+        assertEquals(1, violations(":business:domain", ":feature:home:api").size)
+        assertTrue(violations(":business:data", ":business:domain", ":core:network", ":core:connectivity").isEmpty())
+        assertTrue(violations(":business:domain", ":core:common-kotlin").isEmpty())
     }
 
     @Test
-    fun `debugtool must not depend on data or feature`() {
-        assertEquals(2, violations(":debugtool", ":data:pokemon:api", ":feature:home:api").size)
+    fun `only app may depend on business data`() {
+        assertTrue(violations(":app", ":business:data", ":business:domain").isEmpty())
+        val result = violations(":feature:home:impl", ":business:data")
+        assertEquals(1, result.size)
+        assertTrue(result.single().contains(":business:data"))
+        assertEquals(1, violations(":business:domain", ":business:data").size)
+        assertEquals(1, violations(":debugtool", ":business:data").size)
+        assertTrue(violations(":feature:home:impl", ":business:domain").isEmpty())
+    }
+
+    @Test
+    fun `debugtool must not depend on business or feature`() {
+        assertEquals(3, violations(":debugtool", ":business:domain", ":business:data", ":feature:home:api").size)
         assertTrue(violations(":debugtool", ":core:common-kotlin").isEmpty())
     }
 
@@ -58,19 +71,19 @@ class ModuleDependencyRulesTest {
 
     @Test
     fun `every module may depend on translation`() {
-        listOf(":app", ":core:ui", ":core:designsystem", ":data:pokemon:impl", ":feature:home:impl", ":debugtool").forEach {
+        listOf(":app", ":core:ui", ":core:designsystem", ":business:data", ":feature:home:impl", ":debugtool").forEach {
             assertTrue(it, violations(it, ":translation").isEmpty())
         }
     }
 
     @Test
     fun `impl may depend on its own api`() {
-        assertTrue(violations(":feature:home:impl", ":feature:home:api", ":data:pokemon:api").isEmpty())
+        assertTrue(violations(":feature:home:impl", ":feature:home:api", ":business:domain").isEmpty())
     }
 
     @Test
     fun `coverage threshold applies to the expected modules only`() {
-        val required = listOf(":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity", ":core:storage:impl", ":data:pokemon:impl", ":feature:home:impl", ":debugtool")
+        val required = listOf(":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity", ":core:storage:impl", ":business:domain", ":business:data", ":feature:home:impl", ":debugtool")
         val notRequired = listOf(":core:designsystem", ":core:storage:api", ":feature:home:api", ":core:testing", ":app")
         required.forEach { assertTrue(it, KoverConventionPlugin.requiresCoverageThreshold(it)) }
         notRequired.forEach { assertTrue(it, !KoverConventionPlugin.requiresCoverageThreshold(it)) }

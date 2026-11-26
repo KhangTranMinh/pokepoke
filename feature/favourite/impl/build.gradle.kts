@@ -9,7 +9,7 @@ android {
 
 dependencies {
     implementation(projects.feature.favourite.api)
-    implementation(projects.data.pokemon.api)
+    implementation(projects.business.domain)
     implementation(projects.feature.details.api)
     implementation(projects.feature.auth.api)
     implementation(projects.core.deeplink)

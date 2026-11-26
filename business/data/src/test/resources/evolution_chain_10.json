@@ -1,0 +1,77 @@
+{
+  "id": 10,
+  "baby_trigger_item": {
+    "name": "light-ball",
+    "url": "https://pokeapi.co/api/v2/item/1/"
+  },
+  "chain": {
+    "evolution_details": [],
+    "evolves_to": [
+      {
+        "evolution_details": [
+          {
+            "gender": null,
+            "held_item": null,
+            "item": null,
+            "known_move": null,
+            "location": null,
+            "min_affection": null,
+            "min_beauty": null,
+            "min_happiness": null,
+            "min_level": null,
+            "needs_overworld_rain": false,
+            "time_of_day": "",
+            "trigger": {
+              "name": "level-up",
+              "url": "https://pokeapi.co/api/v2/evolution-trigger/1/"
+            },
+            "turn_upside_down": false
+          }
+        ],
+        "evolves_to": [
+          {
+            "evolution_details": [
+              {
+                "gender": null,
+                "held_item": null,
+                "item": {
+                  "name": "thunder-stone",
+                  "url": "https://pokeapi.co/api/v2/item/1/"
+                },
+                "known_move": null,
+                "location": null,
+                "min_affection": null,
+                "min_beauty": null,
+                "min_happiness": null,
+                "min_level": null,
+                "needs_overworld_rain": false,
+                "time_of_day": "",
+                "trigger": {
+                  "name": "use-item",
+                  "url": "https://pokeapi.co/api/v2/evolution-trigger/1/"
+                },
+                "turn_upside_down": false
+              }
+            ],
+            "evolves_to": [],
+            "is_baby": false,
+            "species": {
+              "name": "raichu",
+              "url": "https://pokeapi.co/api/v2/pokemon-species/26/"
+            }
+          }
+        ],
+        "is_baby": false,
+        "species": {
+          "name": "pikachu",
+          "url": "https://pokeapi.co/api/v2/pokemon-species/25/"
+        }
+      }
+    ],
+    "is_baby": false,
+    "species": {
+      "name": "pichu",
+      "url": "https://pokeapi.co/api/v2/pokemon-species/172/"
+    }
+  }
+}
