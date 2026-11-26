@@ -12,5 +12,5 @@ dependencies {
     implementation(projects.data.pokemon.api)
     implementation(projects.feature.details.api)
     implementation(projects.feature.auth.api)
-    implementation(projects.core.deeplink.api)
+    implementation(projects.core.deeplink)
 }

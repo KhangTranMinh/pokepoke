@@ -14,6 +14,6 @@ dependencies {
     implementation(projects.feature.home.api)
     implementation(projects.core.network)
     implementation(projects.core.connectivity)
-    implementation(projects.core.deeplink.api)
+    implementation(projects.core.deeplink)
     testImplementation(libs.okhttp.mockwebserver)
 }

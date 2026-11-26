@@ -9,5 +9,5 @@ android {
 dependencies {
     implementation(projects.feature.profile.api)
     implementation(projects.feature.auth.api)
-    implementation(projects.core.deeplink.api)
+    implementation(projects.core.deeplink)
 }
