@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.ComposeUiTest
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -182,7 +183,9 @@ class UiComponentsTest {
         }
 
         onNodeWithText(string(R.string.ui_error_server_message, 500)).assertIsDisplayed()
-        waitUntil(timeoutMillis = 10_000) { shown == 1 }
+        assertEquals(0, shown)
+        dismissSnackbarWithVirtualClock()
+        assertEquals(1, shown)
         assertEquals(1, shown)
     }
 
@@ -213,12 +216,24 @@ class UiComponentsTest {
                 MessageEffect(message = message, snackbarHostState = host, onShown = { shown++ })
             }
         }
-        waitUntil(timeoutMillis = 10_000) { shown == 1 }
+        dismissSnackbarWithVirtualClock()
+        assertEquals(1, shown)
 
         message = UiMessage(R.string.ui_loading, id = 2)
-        waitUntil(timeoutMillis = 10_000) { shown == 2 }
+        dismissSnackbarWithVirtualClock()
         assertEquals(2, shown)
     }
+}
+
+/** Advances the virtual Compose clock past SnackbarDuration.Short (4 s) so tests do not depend on machine speed. */
+@OptIn(ExperimentalTestApi::class)
+private fun ComposeUiTest.dismissSnackbarWithVirtualClock() {
+    mainClock.autoAdvance = false
+    waitForIdle()
+    mainClock.advanceTimeBy(6_000)
+    waitForIdle()
+    mainClock.autoAdvance = true
+    waitForIdle()
 }
 
 @androidx.compose.runtime.Composable

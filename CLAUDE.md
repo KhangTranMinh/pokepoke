@@ -3,6 +3,7 @@
 ## Git / GitHub authentication (BẮT BUỘC)
 
 - Remote: `https://github.com/KhangTranMinh/pokepoke.git` (branch chính: `main`).
+- **`main` được bảo vệ (ruleset):** không push thẳng, không force push; chỉ merge qua PR khi CI (`.github/workflows/ci.yml`) xanh; chỉ cho phép **Rebase and merge**. **Chỉ user merge PR** — agent không bao giờ merge, không bypass rule.
 - **Chỉ được dùng token trong `configs/credentials/.env` (biến `GITHUB_TOKEN`)** cho mọi thao tác với GitHub của project này. KHÔNG dùng token/credential global (osxkeychain, `gh auth`, `GITHUB_TOKEN`/`GH_TOKEN` có sẵn trong shell, ...).
 - `git push/pull/fetch`: repo đã được cấu hình credential helper local (`git config --local credential.helper`) đọc token từ `configs/credentials/.env` và đã tắt helper global. Không sửa / không thêm helper khác; không nhúng token vào remote URL.
 - `gh` CLI / GitHub API: luôn truyền token từ file, ví dụ:
@@ -15,16 +16,18 @@
 ## Implement project (dành cho agent)
 
 - **Bắt đầu từ [`docs/tasks.md`](docs/tasks.md)**: làm task đầu tiên chưa tick, theo đúng thứ tự, đủ DoD rồi mới sang task sau.
-- **Mỗi lần chỉ làm 1 task** (bắt buộc). Xong task, theo đúng thứ tự:
-  1. Cập nhật `docs/tasks.md`: tick `[x]` task vừa xong.
-  2. Commit (quy tắc bên dưới).
-  3. Push (theo mục Git / GitHub authentication ở trên).
-  4. **Dừng lại**: báo user task vừa xong (tóm tắt, kết quả DoD, quyết định đã ghi vào `decisions.md`) và **chờ user yêu cầu** mới làm task tiếp theo. Không tự bắt đầu task sau.
+- **Mỗi lần chỉ làm 1 task** (bắt buộc), mỗi task một branch + một PR:
+  1. Bắt đầu: `git switch main && git pull --ff-only`, rồi `git switch -c task/Txx-<slug>` (vd. `task/T14-app-shell`). Commit docs-only: branch `docs/<slug>`.
+  2. Implement → DoD xanh ở local → tick `[x]` trong `docs/tasks.md` → commit (quy tắc bên dưới).
+  3. `git push -u origin <branch>` → tạo PR vào `main` bằng `gh pr create` (token theo mục trên). Tiêu đề PR = dòng đầu commit; body: tóm tắt, kết quả DoD, quyết định đã ghi vào `decisions.md`, cuối body có dòng attribution theo quy định của harness.
+  4. Chờ CI: `gh pr checks <số PR> --watch`. CI đỏ → sửa trên branch đó (xem quy tắc fixup bên dưới), push lại, chờ tới khi xanh.
+  5. **Dừng lại**: báo user link PR + tóm tắt + kết quả DoD / CI + quyết định. **Không merge.** Chờ user merge và yêu cầu task tiếp theo; task sau luôn bắt đầu lại từ bước 1 (`main` mới nhất).
 - **Mỗi task = đúng 1 commit** (bắt buộc):
   - Chỉ commit khi DoD đã xanh; không commit dở dang giữa chừng, không gộp 2 task vào 1 commit, không tách 1 task thành nhiều commit.
   - Commit chứa trọn task: code, test, ảnh screenshot Roborazzi, dấu `[x]` trong `docs/tasks.md`, dòng mới trong `docs/decisions.md` (nếu có).
   - Message: dòng đầu `Txx: <tóm tắt>` (2 chữ số: `T01`, `T17`); body liệt kê ý chính và các quyết định đã ghi vào `decisions.md`; cuối message có dòng `Co-Authored-By` theo quy định của harness.
-  - Phát hiện lỗi của task trước khi đang làm task sau: sửa luôn trong commit của task hiện tại, ghi `Fix Tyy: <mô tả>` trong body. Không amend / rebase commit đã có.
+  - Phát hiện lỗi của task trước khi đang làm task sau: sửa luôn trong commit của task hiện tại, ghi `Fix Tyy: <mô tả>` trong body.
+  - **Không bao giờ** amend / rebase / force push commit đã nằm trên `main`. Riêng branch task **chưa merge**: sửa sau review / CI đỏ bằng `git commit --fixup=<commit task>` → `git rebase -i --autosquash main` (không tương tác: `GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash main`) → `git push --force-with-lease`, để PR vẫn đúng 1 commit. `main` đổi trong lúc chờ → `git rebase main` rồi `--force-with-lease`.
 - Tài liệu (thứ tự ưu tiên khi mâu thuẫn): `docs/design/contracts.md` > `docs/design/layers.md` > `docs/design/screens.md` > `docs/design/designsystem.md`, `docs/design/deeplinks.md`, `docs/design/build.md` > `docs/plan.md` > `docs/requirements.md`.
 - **Không dừng lại để hỏi.** Chỗ tài liệu chưa nói rõ: chọn phương án đơn giản nhất, nhất quán với tài liệu, rồi ghi vào `docs/decisions.md`. Lệch khỏi tài liệu (version, API thư viện khác thực tế) cũng phải ghi.
 - Version thư viện: chỉ dùng version trong `docs/design/build.md` §1; lỗi tương thích → làm theo build.md §1.3.
