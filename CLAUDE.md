@@ -39,6 +39,7 @@
 - Package = namespace module: `com.khangtm.pokepoke.<core|domain|data|feature>.<name>[.api|.impl]`; `:app` → `com.khangtm.pokepoke`; `:debugtool` → `com.khangtm.pokepoke.debugtool`; `:translation` → `com.khangtm.pokepoke.translation`.
 - Kotlin source ở `src/main/kotlin`, test ở `src/test/kotlin`.
 - Chỉ `:app` được phụ thuộc module `:impl`, `:business:data` và `:debugtool` (build tự kiểm tra).
+- Đường dẫn module trong `build-logic` (dependency tự thêm, luật kiến trúc, ngưỡng Kover, debugtool) **không hardcode**: khai báo ở `configs/build/structure.toml` (`docs/design/build.md` §3a). Thêm module / luật mới → sửa file này.
 - **Clean Architecture cho Pokémon / Favourite** (`docs/design/layers.md` §1.1): business model + repository interface + use case ở `:business:domain`; API, DTO, Room, cài đặt repository ở `:business:data` (mọi thứ `internal`). Feature chỉ phụ thuộc `:business:domain`, không biết dữ liệu lấy / lưu ở đâu. Data không chứa quyết định nghiệp vụ.
 - **Layer (bắt buộc — `docs/design/layers.md`, tự rà theo checklist §5 trước khi commit):** ViewModel chỉ inject UseCase + `Navigator` và chỉ xử lý `AppResult`; UseCase luôn trả `AppResult` / `Flow<AppResult>`; Repository luôn trả `DataResult` / `Flow<DataResult>` và là chỗ duy nhất bắt exception (qua `dataResultOf` / `asDataResult`). Không `try`/`catch` ở ViewModel / UseCase; không `runCatching`.
 - `:feature:*:api` chỉ chứa `NavKey`, use case interface (chỉ khi module khác cần), model cho use case, extension point. Repository / DAO / DTO luôn `internal` trong `:impl`.
