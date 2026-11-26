@@ -22,4 +22,13 @@
     <string name="ui_error_server_message">Máy chủ gặp sự cố (%1$d).</string>
     <string name="ui_error_unknown_title">Đã xảy ra lỗi</string>
     <string name="ui_error_unknown_message">Vui lòng thử lại.</string>
+
+    <!-- Tab labels. Added in T14 for the MainShell tests; the tab destinations (T17 / T18 / T20) use them. -->
+    <string name="home_tab">Trang chủ</string>
+    <string name="favourite_tab">Yêu thích</string>
+    <string name="profile_tab">Tôi</string>
+
+    <!-- app_ -->
+    <!-- Temporary Home placeholder (T14); removed in T17 together with HomePlaceholder. -->
+    <string name="app_home_placeholder">Trang chủ (màn hình tạm)</string>
 </resources>

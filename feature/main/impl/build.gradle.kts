@@ -8,4 +8,5 @@ android {
 
 dependencies {
     implementation(projects.feature.main.api)
+    implementation(libs.androidx.compose.material3.navigation.suite)
 }

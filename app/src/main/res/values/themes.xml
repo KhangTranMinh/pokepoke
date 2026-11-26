@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- AppCompat parent: MainActivity is an AppCompatActivity (per-app language on Android 11-12). The UI is Compose. -->
+    <style name="Theme.PokePoke" parent="Theme.AppCompat.DayNight.NoActionBar" />
 
-    <style name="Theme.PokePoke" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Launch theme: system splash screen, then switches to Theme.PokePoke. -->
+    <style name="Theme.PokePoke.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.PokePoke</item>
+    </style>
 </resources>
