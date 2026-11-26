@@ -1,6 +1,5 @@
 package com.khangtm.pokepoke
 
-import com.khangtm.pokepoke.di.APP_DEEP_LINK_CONFIG
 import com.khangtm.pokepoke.di.AppModule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -18,11 +17,10 @@ class AppModuleTest {
     }
 
     @Test
-    fun `deep link config has the pokepoke scheme and the pokepoke com host`() {
+    fun `deep link config is the flavor scheme and host from BuildConfig`() {
         val config = AppModule.provideDeepLinkConfig()
 
-        assertEquals(APP_DEEP_LINK_CONFIG, config)
-        assertEquals(setOf("pokepoke"), config.schemes)
-        assertEquals(setOf("pokepoke.com"), config.hosts)
+        assertEquals(setOf(BuildConfig.DEEPLINK_SCHEME), config.schemes)
+        assertEquals(setOf(BuildConfig.DEEPLINK_HOST), config.hosts)
     }
 }

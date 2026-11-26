@@ -27,6 +27,9 @@ dependencies {
     compileOnly(libs.kover.gradlePlugin)
     compileOnly(libs.roborazzi.gradlePlugin)
 
+    // Chạy lúc build (đọc configs/env/*.toml), nên là implementation chứ không phải compileOnly như các Gradle plugin.
+    implementation(libs.tomlj)
+
     testImplementation(libs.junit)
 }
 

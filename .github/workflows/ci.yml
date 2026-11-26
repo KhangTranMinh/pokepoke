@@ -35,6 +35,18 @@ jobs:
       - uses: actions/checkout@v4
         if: env.CI_SKIP != 'true'
 
+      # Secret giá trị theo môi trường (docs/design/build.md §4b). Chỉ ghi khi GitHub Secret ENV_SECRETS_TOML có giá trị
+      # (chưa đặt -> bước không làm gì). Truyền qua env + printf '%s': không echo, không nhúng vào script, không vào log.
+      # Điều kiện kiểm tra trong script vì `if:` của bước không đọc được `secrets`.
+      - name: Write env secrets
+        if: env.CI_SKIP != 'true'
+        env:
+          ENV_SECRETS_TOML: ${{ secrets.ENV_SECRETS_TOML }}
+        run: |
+          if [ -n "$ENV_SECRETS_TOML" ]; then
+            printf '%s' "$ENV_SECRETS_TOML" > configs/env/secrets.toml
+          fi
+
       - uses: actions/setup-java@v4
         if: env.CI_SKIP != 'true'
         with:
