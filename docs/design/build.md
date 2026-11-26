@@ -139,7 +139,7 @@ include(":app", ":debugtool", ":core:common-kotlin", ":core:common-android", ...
 
 | Plugin id | Class | Áp dụng / cấu hình |
 |---|---|---|
-| `pokepoke.android.application` | `AndroidApplicationConventionPlugin` | `com.android.application`; SDK từ catalog; `jvmToolchain(jvm)`; version từ `version.properties` (mục 4); buildTypes `debug` (`applicationIdSuffix = ".debug"`, `versionNameSuffix = "-debug"`) và `release` (giữ `optimization { enable = true }` hiện có; ký bằng debug keystore tạm thời); `buildFeatures.buildConfig = true`; `androidResources.generateLocaleConfig = true`; task `verifyReleaseHasNoDebugTool` (mục 5) |
+| `pokepoke.android.application` | `AndroidApplicationConventionPlugin` | `com.android.application`; SDK từ catalog; `jvmToolchain(jvm)`; version từ `version.properties` (mục 4); buildTypes `debug` (`applicationIdSuffix = ".debug"`, `versionNameSuffix = "-debug"`) và `release` (giữ `optimization { enable = true }` hiện có); flavor `env` = `dev` / `qa` / `prod`, tắt `devRelease`, signing theo mục 4a; `buildFeatures.buildConfig = true`; `androidResources.generateLocaleConfig = true`; task `verifyReleaseHasNoDebugTool` (mục 5) |
 | `pokepoke.android.library` | `AndroidLibraryConventionPlugin` | `com.android.library`; SDK; `jvmToolchain(jvm)`; `testOptions.unitTests.isIncludeAndroidResources = true`; test deps chung (junit, mockk, turbine, coroutines-test, robolectric, androidx-test-junit, `testImplementation(project(":core:testing"))` trừ `:core:testing` và `:translation`); áp dụng `pokepoke.kover`; task `verifyModuleDependencies` (mục 5) |
 | `pokepoke.android.compose` | `AndroidComposeConventionPlugin` | `org.jetbrains.kotlin.plugin.compose`; `buildFeatures.compose = true`; BOM cho implementation/testImplementation/androidTestImplementation; ui, ui-graphics, foundation, material3, material-icons-core, ui-tooling-preview; `debugImplementation` ui-tooling, ui-test-manifest; `testImplementation` ui-test-junit4; Roborazzi plugin + roborazzi, roborazzi-compose, roborazzi-junit-rule; `roborazzi { outputDir = file("src/test/screenshots") }` |
 | `pokepoke.android.feature.api` | `AndroidFeatureApiConventionPlugin` | `pokepoke.android.library`; `android.testFixtures.enable = true`; `api(core:common-kotlin)`, `api(core:navigation)`; `kotlinx-coroutines-core` |
@@ -169,6 +169,36 @@ versionCode=1
 
 Plugin application đọc qua `providers.fileContents(rootProject.layout.projectDirectory.file("version.properties")).asText` → parse `Properties`. Thiếu key → fail build với message rõ ràng. `versionName = "$major.$minor.$patch"`.
 
+## 4a. Flavor & signing (chỉ `:app`)
+
+Cấu hình trong `pokepoke.android.application` (module library **không** có flavor → lệnh của chúng không đổi).
+
+| | dev | qa | prod |
+|---|---|---|---|
+| `applicationIdSuffix` | `.dev` | `.qa` | — |
+| `versionNameSuffix` | `-dev` | `-qa` | — |
+| `buildConfigField BASE_URL` | `https://pokeapi.co/api/v2/` | `https://pokeapi.co/api/v2/` | `https://pokeapi.co/api/v2/` |
+| Tên app | `src/dev/res/values/non-translation.xml`: `app_name` = "PokePoke Dev" | `src/qa/...`: "PokePoke QA" | không override → `app_name` của `:translation` |
+
+- Flavor dimension duy nhất `env`. Kết hợp build type → variant: `devDebug`, `qaDebug`, `qaRelease`, `prodDebug`, `prodRelease`. **Tắt `devRelease`**: `androidComponents { beforeVariants(selector().withFlavor("env" to "dev").withBuildType("release")) { it.enable = false } }`.
+- applicationId ví dụ: `com.khangtm.pokepoke.dev.debug`, `com.khangtm.pokepoke.qa`, `com.khangtm.pokepoke` (prodRelease). Các môi trường cài song song được. versionName ví dụ `1.0.0-dev-debug`, `1.0.0-qa`, `1.0.0`.
+- `@BaseUrl` trong Hilt module của `:app` = `BuildConfig.BASE_URL`. PokeAPI chỉ có một môi trường nên cả ba giống nhau; chỉ sửa ở đây khi có backend riêng.
+- **Override `app_name` theo flavor** (ngoại lệ duy nhất của luật "string chỉ ở `:translation`", CLAUDE.md): file `app/src/<flavor>/res/values/non-translation.xml` chỉ được **override key đã có** trong `:translation` (hiện chỉ `app_name`), không thêm key mới, không có `values-vi`. Resource của `:app` thắng resource của library khi merge nên không lỗi trùng; áp dụng cho launcher và mọi chỗ dùng `R.string.app_name`.
+
+**Signing** — file ở `configs/signing/`:
+
+| File | Git | Dùng cho |
+|---|---|---|
+| `debug.keystore`, `debug.properties` | **commit** (khóa debug dùng chung cả team / CI → cài đè được giữa các máy) | mọi variant trừ `prodRelease` |
+| `release.keystore`, `release.properties` | **gitignore** (`configs/signing/release.*`) | chỉ `prodRelease` |
+
+- `.properties` có 4 key: `storeFile` (đường dẫn **tương đối với thư mục `configs/signing/`**), `storePassword`, `keyAlias`, `keyPassword`. Thiếu key → fail với message rõ ràng.
+- Hai `signingConfig`: `sharedDebug` (đọc `debug.properties`) và `release` (đọc `release.properties`). Gán theo variant: build type `debug` và `qaRelease` → `sharedDebug`; `prodRelease` → `release`. (Gán ở flavor không đủ vì `signingConfig` của build type thắng flavor; dùng `androidComponents.onVariants` hoặc gán trực tiếp theo tên variant — kiểm chứng với AGP 9, ghi decisions.)
+- Đọc file qua `providers.fileContents(...)` (configuration cache). **Thiếu `release.properties` / `release.keystore` không được làm hỏng các variant khác**: chỉ task của `prodRelease` (`assembleProdRelease`, `bundleProdRelease`, `packageProdRelease`...) fail với message "Thiếu configs/signing/release.properties — chỉ cần cho prodRelease". CI sau này tạo file này từ secret.
+- `.gitignore` (đã có): `/configs/signing/release.*` và ngoại lệ `!/configs/signing/debug.keystore` (luật `*.keystore` chặn mọi keystore khác).
+
+**`:debugtool`**: `:app` khai báo `debugImplementation(projects.debugtool)` + `"qaReleaseImplementation"(projects.debugtool)` → có ở `devDebug`, `qaDebug`, `prodDebug`, `qaRelease`; **không** có ở `prodRelease`.
+
 ## 5. Check kiến trúc
 
 **Task `verifyModuleDependencies`** (mọi module Android/JVM, hook vào `preBuild` và `check`). Input: danh sách project path mà module khai báo trong mọi configuration (`implementation`, `api`, `compileOnly`, `runtimeOnly`, `debugImplementation`, `releaseImplementation`, `testImplementation`, `testFixturesImplementation`, `testFixturesApi`, `androidTestImplementation`, `ksp`), thu thập lúc cấu hình thành `List<String>` (tương thích configuration cache). Luật (vi phạm → fail với message chỉ rõ module + dependency):
@@ -184,7 +214,7 @@ Plugin application đọc qua `providers.fileContents(rootProject.layout.project
 
 Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào X (áp luật bình thường).
 
-**Task `verifyReleaseHasNoDebugTool`** (chỉ `:app`, hook vào `check` và `assembleRelease`): duyệt `releaseRuntimeClasspath.incoming.resolutionResult.allComponents`, fail nếu có `ProjectComponentIdentifier` với `projectPath == ":debugtool"`.
+**Task `verifyReleaseHasNoDebugTool`** (chỉ `:app`, hook vào `check` và `assembleProdRelease` / `bundleProdRelease`): duyệt `prodReleaseRuntimeClasspath.incoming.resolutionResult.allComponents` (chỉ `prodRelease` — `qaRelease` cố ý có debugtool, mục 4a), fail nếu có `ProjectComponentIdentifier` với `projectPath == ":debugtool"`.
 
 ## 6. Kover
 
@@ -215,7 +245,9 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 
 | Mục đích | Lệnh |
 |---|---|
-| Build debug + release | `./gradlew assembleDebug assembleRelease` |
+| Build debug + release (mọi variant) | `./gradlew assembleDebug assembleRelease` (`assembleRelease` gồm `prodRelease` → cần `configs/signing/release.*`) |
+| Build một variant | `./gradlew :app:assembleDevDebug`, `:app:assembleQaRelease`, `:app:assembleProdRelease` |
+| Unit test `:app` | `./gradlew :app:testDevDebugUnitTest` |
 | Test + check kiến trúc + lint một module | `./gradlew :<module>:check` |
 | Toàn bộ | `./gradlew check verifyRoborazziDebug koverVerify` |
 | Coverage report | `./gradlew koverHtmlReport` |

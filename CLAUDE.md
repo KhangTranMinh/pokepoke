@@ -10,6 +10,7 @@
   GH_TOKEN=$(grep '^GITHUB_TOKEN=' configs/credentials/.env | cut -d= -f2-) gh pr create ...
   ```
 - Không bao giờ in token ra output, commit file `.env`, hay ghi token vào file nào khác. `configs/credentials/` đã nằm trong `.gitignore`.
+- Signing: `configs/signing/release.*` (keystore + mật khẩu release) **không bao giờ commit / in ra**; `configs/signing/debug.*` được commit (khóa debug dùng chung).
 
 ## Implement project (dành cho agent)
 
@@ -39,7 +40,7 @@
 - `:feature:*:api` chỉ chứa `NavKey`, use case interface (chỉ khi module khác cần), model cho use case, extension point. Repository / DAO / DTO luôn `internal` trong `:impl`.
 - Key điều hướng đặt tên `XxxNavKey` (implement `NavKey` của Navigation 3), vd. `HomeNavKey`, `DetailsNavKey(pokemonId)` — tránh nhầm với key của storage / Room / Compose `key()`.
 - Mỗi screen: `XxxUiState`, `XxxUiAction`, `XxxViewModel` (`uiState: StateFlow`, `onAction()`), `XxxRoute.kt` (chỉ root, biết ViewModel), `XxxScreen.kt` (stateless, preview được), `XxxPreviews.kt`.
-- Không hardcode string: mọi text và `contentDescription` nằm trong module `:translation` (từ T07a), trong `values/strings.xml` (en) và `values-vi/strings.xml` (vi); key có tiền tố module (`home_`, `details_`...). Chuỗi không cần dịch (vd. `app_name`) đặt ở `values/non-translation.xml`. Chỉ có hai file này. Module khác import `com.khangtm.pokepoke.translation.R`. `:debugtool` giữ strings riêng, chỉ cần `values/`.
+- Không hardcode string: mọi text và `contentDescription` nằm trong module `:translation` (từ T07a), trong `values/strings.xml` (en) và `values-vi/strings.xml` (vi); key có tiền tố module (`home_`, `details_`...). Chuỗi không cần dịch (vd. `app_name`) đặt ở `values/non-translation.xml`. Chỉ có hai file này. Module khác import `com.khangtm.pokepoke.translation.R`. `:debugtool` giữ strings riêng, chỉ cần `values/`. Ngoại lệ duy nhất: `app/src/<flavor>/res/values/non-translation.xml` được override key **đã có** trong `:translation` (hiện chỉ `app_name`) theo flavor, không thêm key mới (`docs/design/build.md` §4a).
 - Không dùng `!!`; không `GlobalScope`; coroutine dùng dispatcher inject (`@IoDispatcher`).
 - Tên test: backtick mô tả hành vi, vd. ``fun `offline with cache emits content once`()``.
 
@@ -47,7 +48,9 @@
 
 | Mục đích | Lệnh |
 |---|---|
-| Build | `./gradlew assembleDebug assembleRelease` |
+| Build (mọi variant; `prodRelease` cần `configs/signing/release.*`) | `./gradlew assembleDebug assembleRelease` |
+| Build một variant | `./gradlew :app:assembleDevDebug` (hoặc `QaDebug`, `QaRelease`, `ProdDebug`, `ProdRelease`) |
+| Unit test `:app` | `./gradlew :app:testDevDebugUnitTest` |
 | Check một module | `./gradlew :<module>:check` |
 | Ghi / kiểm tra screenshot | `./gradlew recordRoborazziDebug` / `./gradlew verifyRoborazziDebug` |
 | Toàn bộ | `./gradlew check verifyRoborazziDebug koverVerify` |

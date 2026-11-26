@@ -27,6 +27,10 @@ output-metadata.json
 *.jks
 *.keystore
 keystore.properties
+# Release signing: never commit (docs/design/build.md §4a)
+/configs/signing/release.*
+# Shared debug signing key: committed so every machine / CI signs debug builds the same way
+!/configs/signing/debug.keystore
 
 # --- Logs / profiling ---
 *.log

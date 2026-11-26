@@ -34,7 +34,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
 ### 1.1. `:app`
 
 - `PokePokeApplication` (`@HiltAndroidApp`, implements `SingletonImageLoader.Factory`): Coil `ImageLoader` với `OkHttpNetworkFetcherFactory` dùng **OkHttpClient riêng** (không có interceptor debug), `crossfade(true)`.
-- Hilt module của app: `@BaseUrl` = `"https://pokeapi.co/api/v2/"`, `DeepLinkConfig(setOf("pokepoke"), setOf("pokepoke.com"))`.
+- Hilt module của app: `@BaseUrl` = `BuildConfig.BASE_URL` (theo flavor, build.md §4a; hiện cả ba là `"https://pokeapi.co/api/v2/"`), `DeepLinkConfig(setOf("pokepoke"), setOf("pokepoke.com"))`.
 - `MainActivity : AppCompatActivity` (`@AndroidEntryPoint`; AppCompat cần để đổi ngôn ngữ trên Android 11–12):
   - `installSplashScreen().setKeepOnScreenCondition { navigator.backStack.isEmpty() }`, `enableEdgeToEdge()`.
   - `savedInstanceState == null && navigator.backStack.isEmpty()`: nếu `intent.data != null` → `deepLinkDispatcher.dispatch(uri)`; nếu không có hoặc dispatch trả `false` → `navigator.execute(ResetTo(listOf(HomeNavKey)))`.
@@ -47,7 +47,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
   - `entryProvider = entryProvider { installers.forEach { it.install(this) } }`.
 - Manifest: `MainActivity` `launchMode="singleTask"`, `configChanges="orientation|screenSize|screenLayout|smallestScreenSize"`, theme `Theme.PokePoke.Starting`, intent-filter theo deeplinks.md; `android:enableOnBackInvokedCallback="true"`; service `androidx.appcompat.app.AppLocalesMetadataHolderService` (`enabled=false`, `exported=false`, meta-data `autoStoreLocales=true`).
 - Locale: `res/resources.properties` chứa `unqualifiedResLocale=en`; `androidResources.generateLocaleConfig = true`.
-- `app_name` = "PokePoke" trong `translation/src/main/res/values/non-translation.xml` (không dịch; hiện là "Poke Poke" chuyển từ project gốc ở T07a — T14 đổi).
+- `app_name` = "PokePoke" trong `translation/src/main/res/values/non-translation.xml` (không dịch; hiện là "Poke Poke" chuyển từ project gốc ở T07a — T14 đổi). Flavor `dev` / `qa` override thành "PokePoke Dev" / "PokePoke QA" bằng `app/src/<flavor>/res/values/non-translation.xml` (build.md §4a, làm ở T13c).
 - Theme XML: `Theme.PokePoke.Starting` (parent `Theme.SplashScreen`, `windowSplashScreenBackground` = primary light `#B8401F` / dark `#8F2A0B` trong `values-night`, `windowSplashScreenAnimatedIcon` = `@drawable/ic_launcher_foreground`, `postSplashScreenTheme` = `@style/Theme.PokePoke`).
 
 ### 1.2. `MainShell` (`:feature:main:impl`)

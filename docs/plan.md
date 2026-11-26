@@ -46,7 +46,7 @@ dependencies {
 
 | Plugin | Cấu hình |
 |---|---|
-| `pokepoke.android.application` | compileSdk/minSdk/targetSdk, JVM toolchain, buildTypes, version (mục 3) |
+| `pokepoke.android.application` | compileSdk/minSdk/targetSdk, JVM toolchain, buildTypes, flavor `dev` / `qa` / `prod` + signing (build.md §4a), version (mục 3) |
 | `pokepoke.android.library` | SDK, JVM, lint, thư viện unit test chung |
 | `pokepoke.android.compose` | Bật Compose, Compose BOM, tooling preview, Compose UI test (Robolectric), Roborazzi |
 | `pokepoke.android.feature.api` | library + `testFixtures` (chứa fake của các interface public) + `core:common-kotlin`, `core:navigation` |
@@ -84,7 +84,7 @@ Check trong convention plugin, **build fail** nếu (chi tiết: build.md §5):
 - `:business:domain` hoặc `:business:data` phụ thuộc vào `:feature:*`.
 - `:debugtool` phụ thuộc vào `:business:domain`, `:business:data` hoặc `:feature:*`.
 - `:translation` phụ thuộc vào bất kỳ module nào.
-- Release runtime classpath của `:app` chứa `:debugtool` (`:app` chỉ khai báo `debugImplementation`).
+- Runtime classpath của `prodRelease` chứa `:debugtool` (`:app` chỉ khai báo `debugImplementation` + `qaReleaseImplementation`).
 
 ## 3. Versioning: `version.properties`
 
@@ -402,7 +402,7 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
 
 ### 8.2. Độc lập & chỉ debug
 
-- `:app` khai báo `debugImplementation(projects.debugtool)` — release build không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này.
+- `:app` khai báo `debugImplementation(projects.debugtool)` + `qaReleaseImplementation(projects.debugtool)` — có ở mọi bản debug và `qaRelease` (QA cần network log / DB); **`prodRelease`** không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này (build.md §4a).
 - **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `common-kotlin`, `network`, `storage:api`, `securestorage:api`, `deeplink`).
 - Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng (khai báo `@Multibinds` trong `core:network`).
 - **Một module duy nhất, không tách `api`/`impl`**: không ai gọi vào debugtool nên không có contract để public.
@@ -475,6 +475,7 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 - [x] DI: **Hilt**.
 - [x] Java: **21** (toolchain + target).
 - [x] Version: `version.properties`, sửa tay; cách tăng trên CI để sau.
+- [x] Flavor `dev` / `qa` / `prod` (chỉ `:app`, tắt `devRelease`); chỉ `prodRelease` ký bằng release keystore, còn lại dùng debug keystore dùng chung (commit); tên app override theo flavor (build.md §4a).
 - [x] Tên module: `core:storage` / `core:securestorage`.
 - [x] Không có `core:locale`; ngôn ngữ do AppCompat lưu.
 - [x] ~~`data:pokemon` là kho dữ liệu, không gọi network; feature tự fetch rồi save~~ → thay bằng: core business gom một chỗ — `:business:domain` (Kotlin thuần: model, repository interface, use case) / `:business:data` (API, DTO, Room, internal) cho Pokémon + Favourite; feature chỉ phụ thuộc `:business:domain` (2026-11-26).
@@ -489,4 +490,4 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 - [x] Single Activity.
 - [x] Core tách `api`/`impl` theo mục 4.3: tách `storage`, `securestorage`; không tách `network`, `connectivity`, `navigation`, `deeplink`, `designsystem`, `ui`, `testing`; `common` tách theo nền tảng.
 - [x] Navigation: **Navigation 3**.
-- [x] `:debugtool`: một module, chỉ `debugImplementation`, độc lập, chỉ dùng `core`; điểm vào là nút con bọ overlay trên mọi activity.
+- [x] `:debugtool`: một module, `debugImplementation` + `qaReleaseImplementation` (không có ở `prodRelease`), độc lập, chỉ dùng `core`; điểm vào là nút con bọ overlay trên mọi activity.
