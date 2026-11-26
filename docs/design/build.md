@@ -290,3 +290,20 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 | Test + check kiến trúc + lint một module | `./gradlew :<module>:check` |
 | Toàn bộ | `./gradlew check verifyRoborazziDebug koverVerify` |
 | Coverage report | `./gradlew koverHtmlReport` |
+| Test `build-logic` (included build, `./gradlew check` ở root **không** chạy) | `./gradlew -p build-logic check` |
+| Giống CI | `./gradlew :app:assembleQaDebug :app:assembleQaRelease check verifyRoborazziDebug koverVerify` + `./gradlew -p build-logic check` |
+
+## 10. CI (GitHub Actions) & bảo vệ `main`
+
+**Workflow `.github/workflows/ci.yml`** — job `build` (tên check bắt buộc trong ruleset):
+- Chạy khi: `pull_request` vào `main`, `push` lên `main`; `concurrency` theo ref, hủy run cũ (`cancel-in-progress`).
+- Runner **`macos-latest`**: ảnh Roborazzi được ghi trên macOS; Robolectric render font trên Linux khác → `verifyRoborazziDebug` sẽ fail giả trên Ubuntu. Repo public nên runner macOS miễn phí.
+- Bước: `actions/checkout` → `actions/setup-java` (Temurin 21) → `gradle/actions/setup-gradle` (cache; chỉ ghi cache ở `main`) → lệnh "Giống CI" ở mục 9 → khi fail: upload artifact `**/build/reports/**`, `**/build/test-results/**`, ảnh diff Roborazzi (`**/build/outputs/roborazzi/**`).
+- **Chỉ build `qaDebug` + `qaRelease`** (không cần khóa release; `qaRelease` kiểm tra R8 / minify). `check` vẫn chạy unit test mọi variant của `:app` và mọi module, `verifyReleaseHasNoDebugTool`, `verifyModuleDependencies`, lint.
+- Không có secret nào. Khi cần CI build `prodRelease`: tạo `configs/signing/release.*` từ GitHub Secrets trong một job riêng (chưa làm).
+
+**Ruleset của `main`** (tạo bằng GitHub API sau khi workflow đã chạy ít nhất một lần):
+- Bắt buộc PR, **0 approval** (PR do agent tạo bằng token của user → tác giả là user, GitHub không cho tự approve; "review" = user bấm merge).
+- Bắt buộc status check `build` xanh, branch phải cập nhật theo `main` (strict).
+- Cấm force push, cấm xóa branch; **không có bypass** (kể cả admin — token của agent mang quyền admin).
+- Repo chỉ bật **Rebase and merge** (tắt merge commit, squash) → commit `Txx: …` lên `main` nguyên vẹn (1 task = 1 commit, giữ `Co-Authored-By`).
