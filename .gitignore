@@ -31,6 +31,8 @@ keystore.properties
 /configs/signing/release.*
 # Shared debug signing key: committed so every machine / CI signs debug builds the same way
 !/configs/signing/debug.keystore
+# Env secrets: never commit (docs/design/build.md §4b)
+/configs/env/secrets.toml
 
 # --- Logs / profiling ---
 *.log

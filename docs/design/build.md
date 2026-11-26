@@ -21,6 +21,7 @@ hilt = "2.60.1"
 room = "2.8.5"
 kover = "0.9.11"
 roborazzi = "1.79.0"
+tomlj = "2.2.0"          # build-logic: đọc configs/env/*.toml (§4b)
 
 # AndroidX
 coreKtx = "1.19.1"
@@ -90,6 +91,7 @@ robolectric = "4.18.1"
 | tink-android | `com.google.crypto.tink:tink-android` |
 | junit, androidx-test-junit, espresso-core, turbine, mockk, robolectric | như tên |
 | roborazzi / roborazzi-compose / roborazzi-junit-rule | `io.github.takahirom.roborazzi:*` |
+| tomlj | `org.tomlj:tomlj` — chỉ `build-logic/convention` (`implementation`: chạy lúc build, khác các Gradle plugin `compileOnly`) |
 
 ### 1.2. Plugin
 
@@ -177,12 +179,12 @@ Cấu hình trong `pokepoke.android.application` (module library **không** có 
 |---|---|---|---|
 | `applicationIdSuffix` | `.dev` | `.qa` | — |
 | `versionNameSuffix` | `-dev` | `-qa` | — |
-| `buildConfigField BASE_URL` | `https://pokeapi.co/api/v2/` | `https://pokeapi.co/api/v2/` | `https://pokeapi.co/api/v2/` |
+| `BuildConfig` (vd. `BASE_URL`) | `configs/env/` §4b | `configs/env/` §4b | `configs/env/` §4b |
 | Tên app | `src/dev/res/values/non-translation.xml`: `app_name` = "PokePoke Dev" | `src/qa/...`: "PokePoke QA" | không override → `app_name` của `:translation` |
 
 - Flavor dimension duy nhất `env`. Kết hợp build type → variant: `devDebug`, `qaDebug`, `qaRelease`, `prodDebug`, `prodRelease`. **Tắt `devRelease`**: `androidComponents { beforeVariants(selector().withFlavor("env" to "dev").withBuildType("release")) { it.enable = false } }`.
 - applicationId ví dụ: `com.khangtm.pokepoke.dev.debug`, `com.khangtm.pokepoke.qa`, `com.khangtm.pokepoke` (prodRelease). Các môi trường cài song song được. versionName ví dụ `1.0.0-dev-debug`, `1.0.0-qa`, `1.0.0`.
-- `@BaseUrl` trong Hilt module của `:app` = `BuildConfig.BASE_URL`. PokeAPI chỉ có một môi trường nên cả ba giống nhau; chỉ sửa ở đây khi có backend riêng.
+- `@BaseUrl` trong Hilt module của `:app` = `BuildConfig.BASE_URL`. Giá trị theo môi trường **không** nằm trong `build-logic`: đọc từ `configs/env/config.toml` (§4b). PokeAPI chỉ có một môi trường nên `BASE_URL` chỉ khai báo ở `[common]`.
 - **Override `app_name` theo flavor** (ngoại lệ duy nhất của luật "string chỉ ở `:translation`", CLAUDE.md): file `app/src/<flavor>/res/values/non-translation.xml` chỉ được **override key đã có** trong `:translation` (hiện chỉ `app_name`), không thêm key mới, không có `values-vi`. Resource của `:app` thắng resource của library khi merge nên không lỗi trùng; áp dụng cho launcher và mọi chỗ dùng `R.string.app_name`.
 
 **Signing** — file ở `configs/signing/`:
@@ -237,6 +239,72 @@ Vì sao không dùng cách "chuẩn" `signingConfigs.release { … }` trong DSL 
 Thay khóa release: chỉ thay `configs/signing/release.keystore` + sửa `release.properties`, không sửa code; kiểm tra `./gradlew :app:assembleProdRelease` rồi `apksigner verify --print-certs` (SHA-256 phải khác bản `qaRelease`). `storeType = "jks"` vẫn đọc được keystore PKCS12 do `keytool` mới tạo.
 
 **`:debugtool`** gắn theo **môi trường**, không theo build type: `:app` khai báo `"devImplementation"(projects.debugtool)` + `"qaImplementation"(projects.debugtool)` (configuration của flavor có sẵn từ khi khai báo flavor, gọi trực tiếp được) → có ở `devDebug`, `qaDebug`, `qaRelease`; **không bao giờ** có ở `prodDebug`, `prodRelease`.
+
+## 4b. Config theo môi trường (`configs/env/`, chỉ `:app`)
+
+Giá trị khác nhau giữa dev / qa / prod (URL, cờ, secret) là **dữ liệu**, không nằm trong code `build-logic`. Plugin `pokepoke.android.application` đọc file TOML và sinh `BuildConfig` cho từng variant; thêm / sửa key **chỉ sửa file**, không sửa plugin.
+
+| File | Git | Nội dung |
+|---|---|---|
+| `config.toml` | **commit** | giá trị không bí mật |
+| `secrets.example.toml` | **commit** | danh sách key secret bắt buộc, giá trị `""` (mẫu cho người mới / CI) |
+| `secrets.toml` | **gitignore** (`/configs/env/secrets.toml`), không bao giờ commit / in ra | giá trị secret thật |
+
+```toml
+# configs/env/config.toml
+[common]                 # mọi flavor; flavor ghi đè key trùng tên
+BASE_URL = "https://pokeapi.co/api/v2/"
+
+# Deeplink theo môi trường (deeplinks.md §1). Tạm thời: dev / qa gắn tên môi trường vào scheme và host
+# để cài song song không tranh link với nhau; prod giữ giá trị gốc.
+[dev]
+DEEPLINK_SCHEME = "pokepoke-dev"
+DEEPLINK_HOST = "dev.pokepoke.com"
+
+[qa]
+DEEPLINK_SCHEME = "pokepoke-qa"
+DEEPLINK_HOST = "qa.pokepoke.com"
+
+[prod]
+DEEPLINK_SCHEME = "pokepoke"
+DEEPLINK_HOST = "pokepoke.com"
+```
+
+```toml
+# configs/env/secrets.example.toml  (secrets.toml cùng cấu trúc, có giá trị thật)
+[common]
+
+[dev]
+
+[qa]
+
+[prod]
+```
+
+Luật (vi phạm → build fail với message chỉ rõ file, section, key):
+- Section chỉ gồm `[common]`, `[dev]`, `[qa]`, `[prod]`; đủ cả 4 (được rỗng). Không bảng con, không mảng.
+- Giá trị flavor = `[common]` + phần ghi đè của flavor. Sau khi gộp, **ba flavor phải có cùng bộ key** (tránh dev có key mà prod thiếu → crash lúc chạy).
+- Tên key `UPPER_SNAKE_CASE` (định danh Java hợp lệ), vì thành tên field `BuildConfig`.
+- **Một key không được nằm ở cả `config.toml` lẫn secret.**
+- Kiểu `config.toml` lấy từ TOML: chuỗi → `String`, số nguyên → `long` (`BuildConfig` field `long`), `true` / `false` → `boolean`; kiểu khác (số thực, ngày, mảng, bảng) → fail. **Secret luôn là `String`**.
+- Ghi đè trong flavor phải cùng kiểu với `[common]`.
+- Bộ key secret bắt buộc = key trong `secrets.example.toml`; `secrets.toml` thiếu key bắt buộc, giá trị rỗng, hoặc có key thừa → fail (chỉ khi variant cần nó, xem dưới).
+
+**Chạy lúc nào** (cùng ý tưởng với release signing, §4a.1):
+
+| Phần | Khi nào đọc | Thiếu / sai |
+|---|---|---|
+| `config.toml`, `secrets.example.toml` | Pha 2 (cấu hình), qua `providers.fileContents(...)` → input của configuration cache, sửa file là cache làm mới | Fail ngay mọi lệnh (file được commit nên luôn phải đúng) |
+| `secrets.toml` | **Lười**: `androidComponents.onVariants { variant.buildConfigFields?.put(key, provider) }` với `Provider<BuildConfigField>` chỉ được lấy giá trị khi task `generate<Variant>BuildConfig` của variant đó nằm trong task graph | Chỉ fail variant cần secret đó: "Thiếu secret 'KEY' cho flavor 'prod' trong configs/env/secrets.toml". `secrets.example.toml` không có key nào → không cần `secrets.toml` |
+
+- **Manifest placeholder**: mọi key của `config.toml` (sau khi gộp) còn được đặt vào `variant.manifestPlaceholders` (giá trị `toString()`), dùng trong manifest dạng `${KEY}` (vd. `android:scheme="${DEEPLINK_SCHEME}"`). **Secret không bao giờ thành placeholder** (manifest đọc được bằng `aapt2 dump`).
+- `buildConfig = true` cho `:app` (đã có); field sinh ra có comment `// from configs/env/config.toml` hoặc `// secret` (không có giá trị trong comment).
+- Code: `build-logic/convention/.../AppEnvConfig.kt` (parse + gộp + kiểm tra, hàm thuần, có unit test trong `build-logic`) và `AndroidApplicationConventionPlugin.kt` (gắn vào variant).
+- **CI**: GitHub Secret `ENV_SECRETS_TOML` (toàn bộ nội dung `secrets.toml`); bước "Write env secrets" ghi ra `configs/env/secrets.toml` **chỉ khi** secret có giá trị (dùng `env:` + `printf '%s'`, không `echo` / không in log). Chưa có secret → bước không làm gì.
+
+⚠️ **"Secret" trong `BuildConfig` vẫn nằm trong APK** và dịch ngược được (R8 không che chuỗi). Tách `secrets.toml` chỉ để **giá trị không nằm trong git**, không giữ được bí mật trên máy người dùng. Key thật sự quan trọng (vd. HMAC ký request có giá trị) phải ký ở server, hoặc ít nhất kết hợp Play Integrity; không đặt secret phía server vào đây.
+
+Thêm key mới: thêm vào `config.toml` (hoặc `secrets.example.toml` + `secrets.toml` + cập nhật GitHub Secret `ENV_SECRETS_TOML`), rồi dùng `BuildConfig.KEY` trong `:app` (chỉ `:app` có `BuildConfig` theo flavor; module khác nhận giá trị qua Hilt qualifier như `@BaseUrl`).
 
 ## 5. Check kiến trúc
 
@@ -300,7 +368,7 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 - Runner **`macos-latest`**: ảnh Roborazzi được ghi trên macOS; Robolectric render font trên Linux khác → `verifyRoborazziDebug` sẽ fail giả trên Ubuntu. Repo public nên runner macOS miễn phí.
 - Bước: `actions/checkout` → `actions/setup-java` (Temurin 21) → `gradle/actions/setup-gradle` (cache; chỉ ghi cache ở `main`) → lệnh "Giống CI" ở mục 9 → khi fail: upload artifact `**/build/reports/**`, `**/build/test-results/**`, ảnh diff Roborazzi (`**/build/outputs/roborazzi/**`).
 - **Chỉ build `qaDebug` + `qaRelease`** (không cần khóa release; `qaRelease` kiểm tra R8 / minify). `check` vẫn chạy unit test mọi variant của `:app` và mọi module, `verifyReleaseHasNoDebugTool`, `verifyModuleDependencies`, lint.
-- Không có secret nào. Khi cần CI build `prodRelease`: tạo `configs/signing/release.*` từ GitHub Secrets trong một job riêng (chưa làm).
+- Secret: chỉ `ENV_SECRETS_TOML` (tùy chọn, §4b; hiện chưa đặt vì chưa có secret). Khi cần CI build `prodRelease`: tạo `configs/signing/release.*` từ GitHub Secrets trong một job riêng (chưa làm).
 
 - ⏸ **Tạm tắt** (2026-11-26, theo yêu cầu): `env.CI_SKIP: "true"` trong `ci.yml` → job `build` chỉ in một dòng rồi xanh (ruleset vẫn thỏa). Trong lúc tắt, agent **bắt buộc** chạy lệnh "Giống CI" (mục 9) ở local trước khi push và ghi kết quả vào body PR. Bật lại: `CI_SKIP: "false"` (một PR).
 
