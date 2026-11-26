@@ -15,10 +15,20 @@ class FakeKeyValueStore(override val name: String) : KeyValueStore {
     var hasBeenWritten: Boolean = false
         private set
 
-    private inline fun <reified T : Any> observe(key: String): Flow<T?> =
-        entries.map { it[key] as? T }.distinctUntilChanged()
+    /** Set to make every operation throw, to test how callers handle storage errors (`Local.*`). */
+    var failWith: Throwable? = null
+
+    private fun check() {
+        failWith?.let { throw it }
+    }
+
+    private inline fun <reified T : Any> observe(key: String): Flow<T?> = entries.map {
+        check()
+        it[key] as? T
+    }.distinctUntilChanged()
 
     private fun put(key: String, value: Any) {
+        check()
         hasBeenWritten = true
         entries.update { it + (key to value) }
     }
@@ -34,16 +44,21 @@ class FakeKeyValueStore(override val name: String) : KeyValueStore {
     override suspend fun putInt(key: String, value: Int) = put(key, value)
 
     override suspend fun remove(key: String) {
+        check()
         hasBeenWritten = true
         entries.update { it - key }
     }
 
     override suspend fun clear() {
+        check()
         hasBeenWritten = true
         entries.value = emptyMap()
     }
 
-    override fun observeAll(): Flow<Map<String, Any>> = entries.map { it.toMap() }.distinctUntilChanged()
+    override fun observeAll(): Flow<Map<String, Any>> = entries.map {
+        check()
+        it.toMap()
+    }.distinctUntilChanged()
 }
 
 /** In-memory [KeyValueStoreFactory]; stores are shared by name like the real one. */

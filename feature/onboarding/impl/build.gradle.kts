@@ -9,4 +9,5 @@ android {
 dependencies {
     implementation(projects.feature.onboarding.api)
     implementation(projects.core.storage.api)
+    testImplementation(testFixtures(projects.core.storage.api))
 }

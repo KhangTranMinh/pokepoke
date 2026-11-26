@@ -28,6 +28,17 @@
     <string name="favourite_tab">Favourites</string>
     <string name="profile_tab">Me</string>
 
+    <!-- onboarding_ -->
+    <string name="onboarding_page1_title">Discover Pokémon</string>
+    <string name="onboarding_page1_body">Browse more than a thousand Pokémon with artwork and details.</string>
+    <string name="onboarding_page2_title">Find them fast</string>
+    <string name="onboarding_page2_body">Search any Pokémon by its exact name or number.</string>
+    <string name="onboarding_page3_title">Keep your favourites</string>
+    <string name="onboarding_page3_body">Sign in to save Pokémon and come back to them anytime.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_get_started">Get started</string>
+
     <!-- app_ -->
     <!-- Temporary Home placeholder (T14); removed in T17 together with HomePlaceholder. -->
     <string name="app_home_placeholder">Home (temporary screen)</string>
