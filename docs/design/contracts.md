@@ -544,7 +544,7 @@ fun interface RemoveFavouriteUseCase { suspend operator fun invoke(pokemonId: In
 fun interface ClearFavouritesUseCase { suspend operator fun invoke(): AppResult<Unit> }
 ```
 
-testFixtures: `FakeFavouriteRepository` (in-memory, cùng luật, `var failWith: DataError?`); `FakeFavourites` implement cả 5 use case trên trên cùng một trạng thái: `val ids = MutableStateFlow<List<Int>>(emptyList())` (mới nhất trước), `val summaries: MutableMap<Int, PokemonSummary>`, `var failWith: AppError? = null` (khác null → mọi hàm trả Failure).
+testFixtures: `FakeFavouriteRepository` (in-memory, cùng luật, `var failWith: DataError?`); `FakeFavourites` giữ một trạng thái chung và **lộ 5 use case dạng property** `observeFavouritePokemon`, `observeIsFavourite`, `toggle`, `remove`, `clear` (một class không implement được cả 5 `fun interface` vì `invoke` trùng chữ ký trên JVM; test truyền `fake.toggle`...): `val ids = MutableStateFlow<List<Int>>(emptyList())` (mới nhất trước), `val summaries: MutableMap<Int, PokemonSummary>`, `var failWith: AppError? = null` (khác null → mọi hàm trả Failure).
 
 ### 8b.2. `:business:data` — sub-package `.favourite`
 
@@ -552,6 +552,7 @@ Mọi thứ `internal`; Hilt bind `FavouriteRepository`, cung cấp `FavouriteDa
 
 - Room `FavouriteDatabase` (`favourite.db`, bảng `favourite(pokemon_id INT PK, added_at INT)`, `exportSchema = true`, **không** destructive migration — dữ liệu của user).
 - `added_at` = `System.currentTimeMillis()` lúc thêm. Đọc bọc `asDataResult { Local.Read }`, ghi bọc `dataResultOf({ Local.Write })`.
+- Mọi lệnh ghi của DAO (cả `:business:data` Pokémon) là `@Transaction`: trên DB đã đóng, query suspend thường của Room ném `CancellationException` (bị `dataResultOf` ném lại, không thành `Local.Write`), còn transaction ném `IllegalStateException` → `Local.Write` (decisions.md T13b).
 
 ## Quy tắc `:feature:*:api`
 

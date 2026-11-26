@@ -84,7 +84,7 @@ Check trong convention plugin, **build fail** nếu (chi tiết: build.md §5):
 - `:business:domain` hoặc `:business:data` phụ thuộc vào `:feature:*`.
 - `:debugtool` phụ thuộc vào `:business:domain`, `:business:data` hoặc `:feature:*`.
 - `:translation` phụ thuộc vào bất kỳ module nào.
-- Runtime classpath của `prodRelease` chứa `:debugtool` (`:app` chỉ khai báo `debugImplementation` + `qaReleaseImplementation`).
+- Runtime classpath của variant `prod` (`prodDebug`, `prodRelease`) chứa `:debugtool` (`:app` chỉ khai báo `devImplementation` + `qaImplementation`).
 
 ## 3. Versioning: `version.properties`
 
@@ -402,12 +402,12 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
 
 ### 8.2. Độc lập & chỉ debug
 
-- `:app` khai báo `debugImplementation(projects.debugtool)` + `qaReleaseImplementation(projects.debugtool)` — có ở mọi bản debug và `qaRelease` (QA cần network log / DB); **`prodRelease`** không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này (build.md §4a).
+- `:app` khai báo `devImplementation(projects.debugtool)` + `qaImplementation(projects.debugtool)` — có ở mọi variant dev / qa (kể cả `qaRelease`: QA cần network log / DB); flavor **`prod`** (`prodDebug`, `prodRelease`) không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này (build.md §4a).
 - **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `common-kotlin`, `network`, `storage:api`, `securestorage:api`, `deeplink`).
-- Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng (khai báo `@Multibinds` trong `core:network`).
+- Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng ở flavor `prod` (khai báo `@Multibinds` trong `core:network`).
 - **Một module duy nhất, không tách `api`/`impl`**: không ai gọi vào debugtool nên không có contract để public.
 - **Điểm vào: nút con bọ 🐞 overlay trên mọi activity**
-  - Debugtool tự đăng ký `ActivityLifecycleCallbacks` qua `androidx.startup` `Initializer` khai báo trong manifest của debugtool (chỉ được merge ở debug) → `:app` không phải gọi gì.
+  - Debugtool tự đăng ký `ActivityLifecycleCallbacks` qua `androidx.startup` `Initializer` khai báo trong manifest của debugtool (chỉ được merge ở dev / qa) → `:app` không phải gọi gì.
   - Mỗi activity được tạo → gắn một `ComposeView` chứa nút con bọ nổi vào `android.R.id.content` của activity đó. Không cần quyền `SYSTEM_ALERT_WINDOW`.
   - Nút kéo thả được, tự bám mép màn hình, nhớ vị trí; nhấn giữ để ẩn tạm.
   - Bấm nút → mở `DebugToolActivity` riêng (không gắn nút vào chính activity này). Không chen vào navigation của app.
@@ -490,4 +490,4 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 - [x] Single Activity.
 - [x] Core tách `api`/`impl` theo mục 4.3: tách `storage`, `securestorage`; không tách `network`, `connectivity`, `navigation`, `deeplink`, `designsystem`, `ui`, `testing`; `common` tách theo nền tảng.
 - [x] Navigation: **Navigation 3**.
-- [x] `:debugtool`: một module, `debugImplementation` + `qaReleaseImplementation` (không có ở `prodRelease`), độc lập, chỉ dùng `core`; điểm vào là nút con bọ overlay trên mọi activity.
+- [x] `:debugtool`: một module, `devImplementation` + `qaImplementation` (không bao giờ có ở flavor `prod`), độc lập, chỉ dùng `core`; điểm vào là nút con bọ overlay trên mọi activity.

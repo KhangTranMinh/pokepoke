@@ -193,11 +193,12 @@ Cấu hình trong `pokepoke.android.application` (module library **không** có 
 | `release.keystore`, `release.properties` | **gitignore** (`configs/signing/release.*`) | chỉ `prodRelease` |
 
 - `.properties` có 4 key: `storeFile` (đường dẫn **tương đối với thư mục `configs/signing/`**), `storePassword`, `keyAlias`, `keyPassword`. Thiếu key → fail với message rõ ràng.
-- Hai `signingConfig`: `sharedDebug` (đọc `debug.properties`) và `release` (đọc `release.properties`). Gán theo variant: build type `debug` và `qaRelease` → `sharedDebug`; `prodRelease` → `release`. (Gán ở flavor không đủ vì `signingConfig` của build type thắng flavor; dùng `androidComponents.onVariants` hoặc gán trực tiếp theo tên variant — kiểm chứng với AGP 9, ghi decisions.)
+- `sharedDebug`: `signingConfig` DSL đọc `debug.properties` (file luôn có), gán cho cả build type `debug` và `release` → mọi variant mặc định ký bằng debug key.
+- `prodRelease` → release key: **không** khai báo DSL `signingConfigs.release` (DSL cần giá trị lúc cấu hình → máy thiếu file sẽ hỏng mọi variant); thay bằng `androidComponents.onVariants(selector().withName("prodRelease")) { it.signingConfig.from(provider) }` với `Provider<SigningConfigInfo>` đọc `release.properties` lười (decisions.md T13c).
 - Đọc file qua `providers.fileContents(...)` (configuration cache). **Thiếu `release.properties` / `release.keystore` không được làm hỏng các variant khác**: chỉ task của `prodRelease` (`assembleProdRelease`, `bundleProdRelease`, `packageProdRelease`...) fail với message "Thiếu configs/signing/release.properties — chỉ cần cho prodRelease". CI sau này tạo file này từ secret.
 - `.gitignore` (đã có): `/configs/signing/release.*` và ngoại lệ `!/configs/signing/debug.keystore` (luật `*.keystore` chặn mọi keystore khác).
 
-**`:debugtool`**: `:app` khai báo `debugImplementation(projects.debugtool)` + `"qaReleaseImplementation"(projects.debugtool)` → có ở `devDebug`, `qaDebug`, `prodDebug`, `qaRelease`; **không** có ở `prodRelease`.
+**`:debugtool`** gắn theo **môi trường**, không theo build type: `:app` khai báo `"devImplementation"(projects.debugtool)` + `"qaImplementation"(projects.debugtool)` (configuration của flavor có sẵn từ khi khai báo flavor, gọi trực tiếp được) → có ở `devDebug`, `qaDebug`, `qaRelease`; **không bao giờ** có ở `prodDebug`, `prodRelease`.
 
 ## 5. Check kiến trúc
 
@@ -214,7 +215,7 @@ Cấu hình trong `pokepoke.android.application` (module library **không** có 
 
 Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào X (áp luật bình thường).
 
-**Task `verifyReleaseHasNoDebugTool`** (chỉ `:app`, hook vào `check` và `assembleProdRelease` / `bundleProdRelease`): duyệt `prodReleaseRuntimeClasspath.incoming.resolutionResult.allComponents` (chỉ `prodRelease` — `qaRelease` cố ý có debugtool, mục 4a), fail nếu có `ProjectComponentIdentifier` với `projectPath == ":debugtool"`.
+**Task `verifyReleaseHasNoDebugTool`** (chỉ `:app`, hook vào `check` và assemble / bundle của mọi variant `prod`): duyệt `prodDebugRuntimeClasspath` và `prodReleaseRuntimeClasspath` `.incoming.resolutionResult.allComponents` (flavor `prod` không bao giờ có debugtool; dev / qa cố ý có, mục 4a), fail nếu có `ProjectComponentIdentifier` với `projectPath == ":debugtool"`.
 
 ## 6. Kover
 
