@@ -45,7 +45,7 @@
 
 ## Giai đoạn 3 — Data
 
-- [ ] **T13 — `:data:pokemon`.** Đọc contracts.md §8. Model, enum, `PokemonImageUrls`, `PokemonFormat`, `PokemonRepository` + `PokemonRepositoryImpl` (Room), testFixtures (`FakePokemonRepository`, `PokemonFixtures`).
+- [x] **T13 — `:data:pokemon`.** Đọc contracts.md §8. Model, enum, `PokemonImageUrls`, `PokemonFormat`, `PokemonRepository` + `PokemonRepositoryImpl` (Room), testFixtures (`FakePokemonRepository`, `PokemonFixtures`).
   Test: `PokemonImageUrls` (mọi dạng URL, có/không `/` cuối, URL lỗi), `PokemonFormat`, `fromKey` của enum; DAO / repository (Robolectric in-memory): mọi hàm trả `DataResult`, observe bản ghi không có → `Failure(NotFound)`, lỗi DB (đóng DB rồi gọi) → `Local.Read` / `Local.Write`, `saveList` không xóa detail, `saveDetail` không mất vị trí, trùng vị trí bị thay, `observeList(limit)` đúng thứ tự, `observeByNameOrId` theo số / tên, `observeSummaries` giữ thứ tự; fake tuân cùng luật (chạy chung bộ test với impl nếu được).
   DoD: `./gradlew :data:pokemon:api:check :data:pokemon:impl:check koverVerify`.
 
