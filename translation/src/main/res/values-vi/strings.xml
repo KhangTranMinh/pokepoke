@@ -28,6 +28,17 @@
     <string name="favourite_tab">Yêu thích</string>
     <string name="profile_tab">Tôi</string>
 
+    <!-- onboarding_ -->
+    <string name="onboarding_page1_title">Khám phá Pokémon</string>
+    <string name="onboarding_page1_body">Duyệt hơn một nghìn Pokémon kèm hình ảnh và thông tin chi tiết.</string>
+    <string name="onboarding_page2_title">Tìm kiếm nhanh</string>
+    <string name="onboarding_page2_body">Tìm Pokémon theo đúng tên hoặc số thứ tự.</string>
+    <string name="onboarding_page3_title">Lưu Pokémon yêu thích</string>
+    <string name="onboarding_page3_body">Đăng nhập để lưu Pokémon và xem lại bất cứ lúc nào.</string>
+    <string name="onboarding_next">Tiếp</string>
+    <string name="onboarding_skip">Bỏ qua</string>
+    <string name="onboarding_get_started">Bắt đầu</string>
+
     <!-- app_ -->
     <!-- Temporary Home placeholder (T14); removed in T17 together with HomePlaceholder. -->
     <string name="app_home_placeholder">Trang chủ (màn hình tạm)</string>
