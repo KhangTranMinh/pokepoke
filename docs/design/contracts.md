@@ -294,7 +294,7 @@ package com.khangtm.pokepoke.core.deeplink
 /** Link đã chuẩn hóa: pokepoke://pokemon/25 và https://pokepoke.com/pokemon/25 → segments ["pokemon","25"]. */
 data class DeepLink(val segments: List<String>, val query: Map<String, String>)
 
-/** :app cung cấp: DeepLinkConfig(schemes = setOf("pokepoke"), hosts = setOf("pokepoke.com")) */
+/** :app cung cấp theo flavor: DeepLinkConfig(setOf(BuildConfig.DEEPLINK_SCHEME), setOf(BuildConfig.DEEPLINK_HOST)) — build.md §4b, deeplinks.md §1 */
 data class DeepLinkConfig(val schemes: Set<String>, val hosts: Set<String>)
 
 /** Feature đăng ký (Hilt @IntoSet). Trả null nếu không khớp. */

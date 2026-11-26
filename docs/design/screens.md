@@ -34,7 +34,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
 ### 1.1. `:app`
 
 - `PokePokeApplication` (`@HiltAndroidApp`, implements `SingletonImageLoader.Factory`): Coil `ImageLoader` với `OkHttpNetworkFetcherFactory` dùng **OkHttpClient riêng** (không có interceptor debug), `crossfade(true)`.
-- Hilt module của app: `@BaseUrl` = `BuildConfig.BASE_URL` (theo flavor, build.md §4a; hiện cả ba là `"https://pokeapi.co/api/v2/"`), `DeepLinkConfig(setOf("pokepoke"), setOf("pokepoke.com"))`.
+- Hilt module của app: `@BaseUrl` = `BuildConfig.BASE_URL` (theo flavor, sinh từ `configs/env/config.toml`, build.md §4b; hiện `[common]` = `"https://pokeapi.co/api/v2/"`), `DeepLinkConfig(setOf(BuildConfig.DEEPLINK_SCHEME), setOf(BuildConfig.DEEPLINK_HOST))` (theo flavor, deeplinks.md §1).
 - `MainActivity : AppCompatActivity` (`@AndroidEntryPoint`; AppCompat cần để đổi ngôn ngữ trên Android 11–12):
   - `installSplashScreen().setKeepOnScreenCondition { navigator.backStack.isEmpty() }`, `enableEdgeToEdge()`.
   - `savedInstanceState == null && navigator.backStack.isEmpty()`: nếu `intent.data != null` → `deepLinkDispatcher.dispatch(uri)`; nếu không có hoặc dispatch trả `false` → `navigator.execute(ResetTo(listOf(HomeNavKey)))`.
@@ -343,7 +343,7 @@ Package `com.khangtm.pokepoke.debugtool`. Điều hướng nội bộ bằng bac
 | `TableRows` | Bảng cuộn 2 chiều, 100 dòng/trang (trước/sau), ô tìm kiếm (`WHERE` mọi cột `LIKE %q%`), ô nhập câu lệnh tùy ý — chỉ chấp nhận câu bắt đầu `SELECT` hoặc `PRAGMA` (không phân biệt hoa thường), còn lại báo lỗi |
 | `StorageList` / `StorageEntries` | Store từ `KeyValueStoreFactory.storeNames()` → `observeAll()` (key, kiểu, giá trị) |
 | `SecureStorageList` / `SecureEntries` | Store từ `SecureStorageFactory.storeNames()` → `observeKeys()`; giá trị hiện `••••••`, bấm từng dòng để hiện (`get`) |
-| `DeeplinkTester` | Ô nhập URI + chip mẫu (deeplinks.md §3); nút "Open" (`Intent(ACTION_VIEW, uri).setPackage(packageName)`), nút "Send notification" (xin `POST_NOTIFICATIONS` nếu cần, channel `debugtool` , `DeepLinkIntentFactory.pendingIntent`) |
+| `DeeplinkTester` | Ô nhập URI + chip mẫu (deeplinks.md §3, scheme / host lấy từ `DeepLinkConfig` inject, không hardcode); nút "Open" (`Intent(ACTION_VIEW, uri).setPackage(packageName)`), nút "Send notification" (xin `POST_NOTIFICATIONS` nếu cần, channel `debugtool` , `DeepLinkIntentFactory.pendingIntent`) |
 
 - Network log: `DebugNetworkInterceptor` (`@IntoSet @AppInterceptors`) ghi vào `NetworkLogStore` (singleton, ring buffer 500, `StateFlow<List<NetworkLogEntry>>`); body tối đa 250 KB (`peekBody`), chỉ body dạng text; header `Authorization`, `Cookie` hiện `••••`.
 - DB mở bằng `SQLiteDatabase.openDatabase(path, null, OPEN_READONLY)`, đóng sau mỗi truy vấn, chạy trên `Dispatchers.IO`.

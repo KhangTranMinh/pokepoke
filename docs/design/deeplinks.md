@@ -4,8 +4,19 @@
 
 | Loại | Dạng | Ghi chú |
 |---|---|---|
-| Deeplink (custom scheme) | `pokepoke://<path>` | Host là segment đầu: `pokepoke://pokemon/25` → `["pokemon","25"]` |
-| App link | `https://pokepoke.com/<path>` | Domain **tạm thời**; chưa có `/.well-known/assetlinks.json` nên Android không verify được (xem §4) |
+| Deeplink (custom scheme) | `<scheme>://<path>` | Host là segment đầu: `pokepoke://pokemon/25` → `["pokemon","25"]` |
+| App link | `https://<host>/<path>` | Domain **tạm thời**; chưa có `/.well-known/assetlinks.json` nên Android không verify được (xem §4) |
+
+`<scheme>` / `<host>` **theo môi trường**, lấy từ `configs/env/config.toml` (build.md §4b), key `DEEPLINK_SCHEME` / `DEEPLINK_HOST`. Tạm thời gắn tên môi trường để các bản cài song song không tranh link:
+
+| Flavor | Scheme | Host |
+|---|---|---|
+| dev | `pokepoke-dev` | `dev.pokepoke.com` |
+| qa | `pokepoke-qa` | `qa.pokepoke.com` |
+| prod | `pokepoke` | `pokepoke.com` |
+
+- Manifest dùng placeholder `${DEEPLINK_SCHEME}` / `${DEEPLINK_HOST}`; `:app` cung cấp `DeepLinkConfig(setOf(BuildConfig.DEEPLINK_SCHEME), setOf(BuildConfig.DEEPLINK_HOST))`. Không hardcode scheme / host ở đâu khác (kể cả debugtool: chip mẫu dựng từ `DeepLinkConfig` inject qua Hilt).
+- Ví dụ trong tài liệu dùng giá trị prod (`pokepoke://`, `https://pokepoke.com`); test dùng `DeepLinkConfig` tự tạo, không phụ thuộc flavor.
 | Push notification | Notification chứa URI ở trên | Mở `MainActivity` với `data = uri` qua `DeepLinkIntentFactory`; đi chung đường deeplink |
 
 Manifest `MainActivity`:
@@ -15,13 +26,13 @@ Manifest `MainActivity`:
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="pokepoke" />
+    <data android:scheme="${DEEPLINK_SCHEME}" />
 </intent-filter>
 <intent-filter android:autoVerify="true">
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="https" android:host="pokepoke.com" />
+    <data android:scheme="https" android:host="${DEEPLINK_HOST}" />
 </intent-filter>
 ```
 
@@ -58,13 +69,15 @@ Intent(data = uri)
   3. Login thành công → goBack → execute pending → `[HomeNavKey, DetailsNavKey(25)]`
   4. Back → Home.
 
-URI mẫu (dùng trong debugtool và test): `pokepoke://home`, `pokepoke://favourite`, `pokepoke://me`, `pokepoke://pokemon/25`, `pokepoke://pokemon/133`, `https://pokepoke.com/pokemon/6`, `https://pokepoke.com/me`, `pokepoke://unknown`.
+URI mẫu (giá trị prod; debugtool thay scheme / host bằng `DeepLinkConfig` của bản đang chạy): `pokepoke://home`, `pokepoke://favourite`, `pokepoke://me`, `pokepoke://pokemon/25`, `pokepoke://pokemon/133`, `https://pokepoke.com/pokemon/6`, `https://pokepoke.com/me`, `pokepoke://unknown`.
 
 ## 4. Kiểm tra thủ công
 
 ```sh
-adb shell am start -a android.intent.action.VIEW -d "pokepoke://pokemon/25" com.khangtm.pokepoke.debug
-adb shell am start -a android.intent.action.VIEW -d "https://pokepoke.com/pokemon/25" com.khangtm.pokepoke.debug
+# devDebug
+adb shell am start -a android.intent.action.VIEW -d "pokepoke-dev://pokemon/25" com.khangtm.pokepoke.dev.debug
+adb shell am start -a android.intent.action.VIEW -d "https://dev.pokepoke.com/pokemon/25" com.khangtm.pokepoke.dev.debug
+# qaRelease: pokepoke-qa:// / https://qa.pokepoke.com, package com.khangtm.pokepoke.qa
 ```
 
-App link chưa verify: mở từ trình duyệt sẽ không tự vào app. Khi test tay có thể bật trong Settings → Apps → PokePoke → Open by default → thêm link `pokepoke.com`, hoặc dùng lệnh `adb` ở trên (chỉ định package). Khi có domain thật: host `assetlinks.json` với SHA-256 của chứng chỉ release.
+App link chưa verify: mở từ trình duyệt sẽ không tự vào app. Khi test tay có thể bật trong Settings → Apps → PokePoke → Open by default → thêm link của host môi trường đó, hoặc dùng lệnh `adb` ở trên (chỉ định package). Khi có domain thật: host `assetlinks.json` với SHA-256 của chứng chỉ release.

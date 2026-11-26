@@ -12,6 +12,7 @@
   ```
 - Không bao giờ in token ra output, commit file `.env`, hay ghi token vào file nào khác. `configs/credentials/` đã nằm trong `.gitignore`.
 - Signing: `configs/signing/release.*` (keystore + mật khẩu release) **không bao giờ commit / in ra**; `configs/signing/debug.*` được commit (khóa debug dùng chung).
+- Config môi trường (`docs/design/build.md` §4b): `configs/env/secrets.toml` **không bao giờ commit / in ra**; `configs/env/config.toml` và `secrets.example.toml` được commit. Giá trị theo flavor (URL, cờ, secret) đặt ở `configs/env/`, không hardcode trong `build-logic`.
 
 ## Implement project (dành cho agent)
 
