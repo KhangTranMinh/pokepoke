@@ -51,3 +51,11 @@ dependencies {
     androidTestImplementation(libs.androidx.test.junit)
     androidTestImplementation(libs.espresso.core)
 }
+
+// The qaRelease configuration is created by AGP after the flavors / build types are known (not yet at this point),
+// so the debugtool dependency is attached as soon as that configuration appears.
+configurations.configureEach {
+    if (name == "qaReleaseImplementation") {
+        dependencies.add(project.dependencies.create(projects.debugtool))
+    }
+}

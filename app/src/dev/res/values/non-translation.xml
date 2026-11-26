@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overrides app_name of :translation for this flavor (docs/design/build.md §4a). -->
+    <string name="app_name" translatable="false">PokePoke Dev</string>
+</resources>

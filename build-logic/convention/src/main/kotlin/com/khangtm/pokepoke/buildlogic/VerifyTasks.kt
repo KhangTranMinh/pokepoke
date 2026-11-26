@@ -44,7 +44,7 @@ abstract class VerifyReleaseHasNoDebugToolTask : DefaultTask() {
     fun verify() {
         if (":debugtool" in releaseProjectPaths.get()) {
             throw GradleException(
-                "Release runtime classpath contains :debugtool. " +
+                "prodRelease runtime classpath contains :debugtool. " +
                     "Declare it with debugImplementation only (docs/design/build.md §5).",
             )
         }
@@ -75,13 +75,13 @@ internal fun Project.registerVerifyModuleDependencies() {
 internal fun Project.registerVerifyReleaseHasNoDebugTool() {
     val verify = tasks.register<VerifyReleaseHasNoDebugToolTask>("verifyReleaseHasNoDebugTool") {
         group = "verification"
-        description = "Fails when :debugtool is on the release runtime classpath."
+        description = "Fails when :debugtool is on the prodRelease runtime classpath."
     }
     afterEvaluate {
-        val root = configurations.getByName("releaseRuntimeClasspath").incoming.resolutionResult.rootComponent
+        val root = configurations.getByName("prodReleaseRuntimeClasspath").incoming.resolutionResult.rootComponent
         verify.configure { releaseProjectPaths.set(root.map { collectProjectPaths(it) }) }
     }
-    tasks.matching { it.name == "check" || it.name == "assembleRelease" }.configureEach { dependsOn(verify) }
+    tasks.matching { it.name in setOf("check", "assembleProdRelease", "bundleProdRelease") }.configureEach { dependsOn(verify) }
 }
 
 private fun collectProjectPaths(root: ResolvedComponentResult): Set<String> {
