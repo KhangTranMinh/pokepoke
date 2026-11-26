@@ -81,6 +81,7 @@ robolectric = "4.18.1"
 | androidx-room-runtime / ktx / compiler / testing | `androidx.room:*` |
 | hilt-android / hilt-compiler / hilt-android-testing | `com.google.dagger:*` |
 | javax-inject | `javax.inject:javax.inject` |
+| hilt-core | `com.google.dagger:hilt-core` (version `hilt`) — Hilt cho module Kotlin/JVM thuần (`:business:domain`) |
 | kotlinx-coroutines-core / android / test | `org.jetbrains.kotlinx:kotlinx-coroutines-*` |
 | kotlinx-serialization-json | `org.jetbrains.kotlinx:kotlinx-serialization-json` |
 | retrofit / retrofit-converter-kotlinx-serialization | `com.squareup.retrofit2:retrofit`, `converter-kotlinx-serialization` |
@@ -152,7 +153,9 @@ include(":app", ":debugtool", ":core:common-kotlin", ":core:common-android", ...
 Ghi chú:
 - AGP 9 built-in Kotlin: **không** apply `org.jetbrains.kotlin.android`.
 - Nếu `testFixtures` Kotlin cần cờ: thêm `android.experimental.enableTestFixturesKotlinSupport=true` vào `gradle.properties`.
-- Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:storage:api`, `core:securestorage:api`, `data:pokemon:api`, `core:common-kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
+- Module `:api` là **Kotlin/JVM thuần** (`pokepoke.jvm.library`) khi không cần Android: `core:storage:api`, `core:securestorage:api`, `core:common-kotlin`. Các module này không được chứa `@Inject` class / Hilt module (KSP Hilt không chạy ở đây).
+- **`:business:domain`** — Kotlin/JVM thuần, ngoại lệ có chủ đích của dòng trên: `pokepoke.jvm.library` + plugin `ksp`; `api(core:common-kotlin)`, `api(kotlinx-coroutines-core)`, `implementation(hilt-core)`, `ksp(hilt-compiler)` (Hilt hỗ trợ thư viện Java/Kotlin thuần qua `hilt-core`: `@Inject` + `@Module @InstallIn(SingletonComponent::class)`). Không phụ thuộc `core:connectivity` (Android). Phương án dự phòng nếu Hilt không gom được binding từ module JVM: bỏ Hilt khỏi domain, `Impl` để `public`, `@Binds` use case đặt trong Hilt module của `:business:data` (ghi decisions).
+- **`:business:data`** — Android library không tách api/impl: `pokepoke.android.library` + `pokepoke.hilt` + `pokepoke.room` + `pokepoke.kotlin.serialization`; `api(business:domain)`, `implementation(core:network, core:connectivity)`.
 - Giữ Android library cho `core:navigation` (`@StringRes`, `ImageVector`, Compose; không tách api/impl), `core:deeplink` (`PendingIntent`, phụ thuộc `core:navigation`; không tách api/impl) và `feature:*:api`.
 
 ## 4. `version.properties`
@@ -172,10 +175,10 @@ Plugin application đọc qua `providers.fileContents(rootProject.layout.project
 
 | Module hiện tại | Không được phụ thuộc |
 |---|---|
-| bất kỳ, trừ `:app` | `:*:impl`, `:debugtool` |
-| `:core:*` | `:data:*`, `:feature:*` |
-| `:data:*` | `:feature:*` |
-| `:debugtool` | `:data:*`, `:feature:*` |
+| bất kỳ, trừ `:app` | `:*:impl`, `:debugtool`, `:business:data` |
+| `:core:*` | `:business:*`, `:feature:*` |
+| `:business:*` | `:feature:*` |
+| `:debugtool` | `:business:*`, `:feature:*` |
 | `:core:testing` | `:*:impl` |
 | `:translation` | mọi module khác (chỉ chứa resource, không phụ thuộc gì; mọi module được phụ thuộc vào nó) |
 
@@ -187,7 +190,7 @@ Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào 
 
 - Áp dụng cho mọi module; root aggregate (`kover(project(":x"))` cho tất cả) → `./gradlew koverHtmlReport`.
 - Exclude: `*_Factory`, `*_MembersInjector`, `*_HiltModules*`, `Hilt_*`, `*_Impl` (Room), `*_Impl$*`, `*ComposableSingletons*`, `*.BuildConfig`, `*Module` / `*Module$*` (Hilt module), `*RouteKt` (composable root — xem screens.md), `*PreviewKt`, `*.di.*`.
-- **Verify rule** `minBound(70)` (line) cho: `:core:common-kotlin`, `:core:common-android`, `:core:network`, `:core:connectivity`, `:core:navigation`, `:core:deeplink`, `:core:*:impl`, `:data:*:impl`, `:feature:*:impl`, `:debugtool`. Module khác không đặt ngưỡng.
+- **Verify rule** `minBound(70)` (line) cho: `:core:common-kotlin`, `:core:common-android`, `:core:network`, `:core:connectivity`, `:core:navigation`, `:core:deeplink`, `:core:*:impl`, `:business:domain`, `:business:data`, `:feature:*:impl`, `:debugtool`. Module khác không đặt ngưỡng.
 
 ## 7. Roborazzi / Robolectric
 

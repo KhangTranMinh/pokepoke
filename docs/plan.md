@@ -16,7 +16,7 @@
 
 1. **Core chỉ cung cấp function / hạ tầng generic**, không biết gì về logic nghiệp vụ hay feature nào.
 2. **Dữ liệu nghiệp vụ thuộc về module sở hữu nó** (flag onboarding, token, favourite...).
-3. **Business model riêng, không phụ thuộc API response.** DTO chỉ tồn tại trong feature gọi API; mọi module khác chỉ thấy business model.
+3. **Clean Architecture cho dữ liệu nghiệp vụ dùng chung (Pokémon, Favourite):** business model + repository interface + use case ở `:business:domain`; API, DTO, Room ở `:business:data` (internal). Feature chỉ thấy `:business:domain` — người làm UI không cần biết dữ liệu lấy / lưu ở đâu (mục 5, layers.md §1.1).
 4. **Single source of truth, network-first:** luôn cố gắng fetch network trước; chỉ khi xác nhận không có network mới dùng cache. UI luôn đọc dữ liệu từ storage và chỉ cập nhật **một lần** cho mỗi lần tải (mục 5.2).
 5. **Feature tự quyết định navigation và deeplink của mình**; core chỉ cung cấp contract + cơ chế dispatch.
 6. **Mỗi screen có 1 `UiState` + 1 `UiAction`**; chỉ composable root phụ thuộc ViewModel, phần UI thật sự là stateless và preview được (mục 7).
@@ -37,7 +37,7 @@ plugins {
 }
 android { namespace = "com.khangtm.pokepoke.feature.home.impl" }
 dependencies {
-    implementation(projects.data.pokemon.api)
+    implementation(projects.business.domain)
     implementation(projects.feature.details.api)
 }
 ```
@@ -79,9 +79,10 @@ Convention plugin đọc qua `VersionCatalogsExtension`. Chỉ sửa một chỗ
 
 Check trong convention plugin, **build fail** nếu (chi tiết: build.md §5):
 - Module nào ngoài `:app` phụ thuộc vào một module `:impl` hoặc `:debugtool`.
-- `:core:*` phụ thuộc vào `:data:*` hoặc `:feature:*`.
-- `:data:*` phụ thuộc vào `:feature:*`.
-- `:debugtool` phụ thuộc vào `:data:*` hoặc `:feature:*`.
+- Module nào ngoài `:app` phụ thuộc vào `:business:data` (kể cả `:business:data` khác).
+- `:core:*` phụ thuộc vào `:business:domain`, `:business:data` hoặc `:feature:*`.
+- `:business:domain` hoặc `:business:data` phụ thuộc vào `:feature:*`.
+- `:debugtool` phụ thuộc vào `:business:domain`, `:business:data` hoặc `:feature:*`.
 - `:translation` phụ thuộc vào bất kỳ module nào.
 - Release runtime classpath của `:app` chứa `:debugtool` (`:app` chỉ khai báo `debugImplementation`).
 
@@ -122,30 +123,36 @@ versionCode=12
 :translation                      ← mọi strings.xml (values/ en + values-vi/ vi), chuỗi không dịch ở non-translation.xml; sau này có thể thêm remote translation
 :core:testing                     ← tiện ích test (không chứa test case)
 
-# Data — kho dữ liệu nghiệp vụ dùng chung (SSOT), không gọi network
-:data:pokemon:api / :impl         ← business model + PokemonRepository (query/save, trả DataResult) + Room DB
+# Business — core business của app (Pokémon + Favourite), một chỗ duy nhất
+:business:domain                  ← (Kotlin/JVM thuần) model, repository interface, use case — feature chỉ phụ thuộc module này
+                                    pokemon/: PokemonSummary/Detail..., PokemonRepository, use case list / page / search / detail
+                                    favourite/: FavouritePokemon, FavouriteRepository, use case observe / isFavourite / toggle / remove / clear
+:business:data                    ← (Android, mọi thứ internal, chỉ :app phụ thuộc) cài đặt repository
+                                    pokemon/: PokeAPI (Retrofit, DTO, mapper) + Room cache (SSOT); favourite/: Room DB (chỉ id + thời điểm thêm)
 
 # Feature
 :feature:onboarding:api / :impl   ← tự lưu flag "đã xem onboarding" (qua core:storage)
 :feature:auth:api / :impl         ← token (qua core:securestorage), AuthState, interceptor RequiresAuth, LoginNavKey
 :feature:main:api / :impl         ← khung 3 tab (MainShell): bottom bar / navigation rail; api để trống
-:feature:home:api / :impl         ← tab Home (HomeNavKey): list + search; tự gọi API list / search → save vào PokemonRepository
-:feature:details:api / :impl      ← màn Details; tự gọi API detail/species/evolution → save vào PokemonRepository
-:feature:favourite:api / :impl    ← tab Favourite; Room DB riêng (chỉ lưu id); api public `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase`
+:feature:home:api / :impl         ← tab Home (HomeNavKey): list + search (use case của :business:domain)
+:feature:details:api / :impl      ← màn Details (:business:domain)
+:feature:favourite:api / :impl    ← tab Favourite (:business:domain + auth:api: chỉ hiện khi đã đăng nhập, xóa khi logout)
 :feature:profile:api / :impl      ← tab Me: thông tin đăng nhập, phiên bản, đổi ngôn ngữ, logout
 
 # Debug — chỉ gắn vào debug build
 :debugtool                        ← network log, xem / query local DB, xem local storage (mục 8)
 ```
 
-- **`:impl` của feature**: chia package theo Clean Architecture `data/`, `domain/`, `presentation/`.
-- **`:api`**: chỉ chứa `NavKey`, **use case interface** (chỉ khi module khác cần), model mà use case cần, extension point; fake để trong `testFixtures`. Repository luôn `internal` trong `:impl` (chi tiết: contracts.md "Quy tắc `:feature:*:api`"). Core public interface kiểu capability (`Navigator`, `KeyValueStore`...); `data:pokemon:api` public `PokemonRepository`.
+- **`:impl` của feature**: package `presentation/`, `navigation/`, `di/`; `domain/` chỉ để ghép use case riêng cho màn hình; `data/` chỉ ở feature có dữ liệu riêng chưa thuộc `:business:domain` (onboarding, auth).
+- **`:api`**: chỉ chứa `NavKey`, **use case interface** (chỉ khi module khác cần), model mà use case cần, extension point; fake để trong `testFixtures`. Repository luôn `internal` trong `:impl` (chi tiết: contracts.md "Quy tắc `:feature:*:api`"). Core public interface kiểu capability (`Navigator`, `KeyValueStore`...).
+- **`:business:domain`**: model, repository interface, use case interface public; use case `Impl` + Hilt module internal; fake trong `testFixtures`. **`:business:data`**: mọi thứ internal, chỉ :app phụ thuộc.
+- **Chỉ core business vào `:business:*`** (entity cốt lõi nhiều feature cùng dùng — hiện là Pokémon, Favourite). Không tạo thêm module business khác; dữ liệu chỉ một feature dùng (flag onboarding, token, ngôn ngữ) ở trong feature, feature tự dùng Clean Architecture bên trong `:impl`.
 
 ### 4.1. Phân chia theo team
 
 | Nhóm module | Sở hữu |
 |---|---|
-| `core:*`, `data:*`, `build-logic`, `debugtool` | **Team Core** |
+| `core:*`, `:business:domain`, `:business:data`, `build-logic`, `debugtool` | **Team Core** (đổi contract `:business:domain` cần thống nhất với team Feature) |
 | `feature:*` (mỗi feature một team, hoặc một team giữ nhiều feature) | **Các team Feature** |
 | `:app` | Team Core (chỉ là nơi lắp ráp; feature team review phần đăng ký của mình) |
 
@@ -153,14 +160,14 @@ Phụ thuộc giữa các feature:
 
 | Feature | Phụ thuộc |
 |---|---|
-| `feature:home` | `data:pokemon:api`, `details:api` (mở Details qua `DetailsNavKey`) |
-| `feature:details` | `data:pokemon:api`, `favourite:api` (nút add/remove favourite), `home:api` (deeplink dựng back stack `[HomeNavKey, DetailsNavKey]`) |
-| `feature:favourite` | `data:pokemon:api`, `details:api`, `auth:api` |
+| `feature:home` | `:business:domain`, `details:api` (mở Details qua `DetailsNavKey`) |
+| `feature:details` | `:business:domain` (nút add/remove favourite), `home:api` (deeplink dựng back stack `[HomeNavKey, DetailsNavKey]`) |
+| `feature:favourite` | `:business:domain`, `details:api`, `auth:api` |
 | `feature:profile` | `auth:api` |
 
 - Mỗi tab / màn hình là một feature độc lập, không bị nghẽn qua một module chung.
 - Sửa `impl` không làm các module phụ thuộc `api` build lại; chỉ đổi contract trong `api` mới cần thống nhất giữa các team.
-- Đổi contract của `core` / `data` → team Core review.
+- Đổi contract của `core` / `domain` → team Core review.
 - Gắn CODEOWNERS theo thư mục.
 
 ### 4.2. Core chỉ cung cấp function
@@ -170,7 +177,7 @@ Phụ thuộc giữa các feature:
 | `core:storage` | Key-value store generic | Flag onboarding → `onboarding:impl` |
 | `core:securestorage` | Lưu/đọc có mã hóa | Token → `auth:impl` |
 | `core:network` | HttpClient, JSON, mapping lỗi, hook interceptor | Base URL → `:app`; endpoint, DTO → feature gọi API; network log → `debugtool` |
-| `core:ui` | `RemoteImage` (bọc Coil) | Cấu hình `ImageLoader` → `:app`; URL ảnh Pokémon → `data:pokemon` |
+| `core:ui` | `RemoteImage` (bọc Coil) | Cấu hình `ImageLoader` → `:app`; URL ảnh Pokémon → `:business:data` |
 | *(không có `core:database`)* | — | Room yêu cầu mọi entity trong một class `@Database` → DB chung buộc core biết entity. Mỗi module có DB riêng, dùng chung cấu hình qua plugin `pokepoke.room` |
 | *(không có `core:locale`)* | — | Xem mục 9 |
 
@@ -181,29 +188,29 @@ Phụ thuộc giữa các feature:
 - **Không tách** `deeplink`: cài đặt chỉ dùng `java.net.URI` + Android framework (`PendingIntent` đã có trong chữ ký contract) + Hilt, chỉ có một cài đặt; `:api` cũng không thể là Kotlin thuần (`PendingIntent`, `NavRequest`) nên tách không được gì.
 - **Không tách** `navigation`: `NavigatorImpl` chỉ dùng thứ contract đã kéo (navigation3, Compose runtime, coroutines) + Hilt, chỉ có một cài đặt, và test dùng `FakeNavigator` trong testFixtures; `internal` đủ che cài đặt.
 - **Tiêu chí chung:** chỉ tách `:api` khi `:impl` kéo thư viện nặng / dễ rò (DataStore, Tink, Room, Retrofit) hoặc có nhiều cài đặt. Module không tách sau này cần thì tách (giữ nguyên package, module dùng chỉ đổi dòng dependency).
-- **Kotlin/JVM thuần** cho `storage:api`, `securestorage:api`, `data:pokemon:api` và `common-kotlin`; `core:navigation` / `core:deeplink` giữ Android library (xem build.md §3).
+- **Kotlin/JVM thuần** cho `storage:api`, `securestorage:api` và `common-kotlin`; `:business:domain` cũng Kotlin/JVM thuần nhưng có Hilt module qua `hilt-core` (build.md §3); `core:navigation` / `core:deeplink` giữ Android library (xem build.md §3).
 - **Không tách** `api`/`impl` cho `designsystem`, `ui`, `testing`; `common` tách theo nền tảng (`kotlin` / `android`) — code UI / tiện ích thuần, tách ra chỉ thêm module rỗng.
 
 ## 5. Dữ liệu: business model & single source of truth
 
-### 5.1. `data:pokemon` — kho dữ liệu, không gọi network
+### 5.1. `:business:domain` + `:business:data` — business model và kho dữ liệu
 
 ```
-data:pokemon:api
-  model:   PokemonSummary(id, name, imageUrl), PokemonDetail(...), EvolutionStage(...)
-  PokemonRepository (mọi hàm trả DataResult / Flow<DataResult>):
-    observeList(limit), observeTotalCount(), saveList(items, offset, totalCount)
-    saveSummary(summary), observeDetail(id), saveDetail(detail)
-    observeByNameOrId(query), observeSummaries(ids)
-  PokemonImageUrls.kt  ← logic dựng URL ảnh (mục 5.3)
-  (chữ ký đầy đủ: design/contracts.md §8)
+:business:domain   (feature chỉ thấy module này)
+  model:   PokemonSummary(id, name, imageUrl), PokemonDetail(...), EvolutionStage(...), PokemonFormat
+  PokemonRepository (interface; DataResult / Flow<DataResult>):
+    observeList(limit), observeTotalCount(), observeDetail(id), observeByNameOrId(query), observeSummaries(ids)
+    refreshPage(offset, limit), refreshByNameOrId(query), refreshDetail(id)      ← network → lưu
+  use case: ObservePokemonList, LoadPokemonPage, SearchPokemon, ObservePokemonDetail (network-first, mục 5.2)
+  (chữ ký đầy đủ: design/contracts.md §8.1)
 
-data:pokemon:impl
-  Room DB, entity, mapper entity ↔ model (không có DTO, không có network)
+:business:data     (internal, chỉ :app phụ thuộc)
+  PokemonApi (Retrofit), DTO, mapper DTO → model, PokemonImageUrls (mục 5.3)
+  Room DB, entity, luật merge; PokemonRepositoryImpl                (design/contracts.md §8.2)
 ```
 
-- Use case của feature gọi remote repository của mình (API → business model) rồi gọi `save*`; đọc lại qua `observe*`. ViewModel không biết repository (mục 7.1).
-- **Luật merge do `data:pokemon:impl` nắm:** `saveList` chỉ upsert `name` / `position`, không ghi đè dữ liệu detail; `saveDetail` không làm mất `position` của list. Có unit test riêng.
+- Feature gọi use case của `:business:domain`; không biết API, DTO, Room. ViewModel không biết repository (mục 7.1).
+- **Luật merge do `:business:data` nắm:** lưu list chỉ upsert `name` / `position`, không ghi đè dữ liệu detail; lưu detail không làm mất `position` của list. Có unit test riêng.
 - Lưu cột `position` (thứ tự trong API) để sắp xếp list — không sắp theo `id` vì PokeAPI có các form id 10001+ ở cuối danh sách.
 - Upsert theo `id`, không xóa rồi ghi lại. Không xóa cache khi logout (dữ liệu public).
 
@@ -225,13 +232,13 @@ load():
 - **Chỉ bắt đầu collect Flow từ storage sau khi fetch xong / xác nhận offline**, nên lần emit đầu tiên đã là dữ liệu cuối cùng. Sau đó vẫn tiếp tục observe storage để nhận thay đổi thật (vd. favourite đổi).
 - Dùng cache do offline → `UiState` có cờ `isOffline` để hiện banner nhỏ "đang xem dữ liệu đã lưu".
 - `NetworkMonitor` (trong `core:connectivity`): `isOnline: Flow<Boolean>` dựa trên `ConnectivityManager`. Fake trong `testFixtures`.
-- Logic này viết một lần dạng helper generic trong `core:common-kotlin` (`runNetworkFirst`, `networkFirst`), **use case** gọi helper và truyền lambda. Unit test riêng cho helper.
+- Logic này viết một lần dạng helper generic trong `core:common-kotlin` (`runNetworkFirst`, `networkFirst`); **use case của `:business:domain`** gọi helper với `fetch = repository.refresh…`, `observe = repository.observe…`. Unit test riêng cho helper.
 
 ### 5.3. URL ảnh: `PokemonImageUrls.kt`
 
 - API list chỉ trả `name` + `url`: **id** tách từ `url` (`.../pokemon/25/` → 25); **ảnh** dựng theo quy ước repo sprites của PokeAPI (vd. `.../sprites/pokemon/other/official-artwork/{id}.png`).
-- Toàn bộ quy ước này nằm trong **một file duy nhất** `data/pokemon/api/.../PokemonImageUrls.kt` (Kotlin thuần): `fun artworkUrl(id: Int): String`, và hàm tách id từ `url`. Đổi quy ước chỉ sửa một chỗ.
-- Có unit test riêng trong `data:pokemon:api`.
+- Toàn bộ quy ước này nằm trong **một file duy nhất** `data/pokemon/.../PokemonImageUrls.kt` (`internal`): `fun artworkUrl(id: Int): String`, và hàm tách id từ `url`. Đổi quy ước chỉ sửa một chỗ.
+- Có unit test riêng trong `:business:data`.
 
 ### 5.4. Danh sách (tab Home) — không dùng thư viện Paging
 
@@ -248,7 +255,7 @@ HomeViewModel:
 
 - Tăng `visibleCount` **sau khi** trang đã được lưu → list cập nhật một lần, không nhảy.
 - Trong lúc tải trang tiếp: loading ở cuối list. Offline và cache có đủ trang đó → hiện từ cache; không có → dòng lỗi + retry ở cuối list.
-- Hết dữ liệu: dựa vào `count` trong response API (lưu cùng `saveList`); `visibleCount >= totalCount` thì ngừng.
+- Hết dữ liệu: dựa vào `count` trong response API (`refreshPage` lưu cùng trang); `visibleCount >= totalCount` thì ngừng.
 - Đang tải một trang thì bỏ qua các lần `onReachEnd` tiếp theo.
 - List item hiển thị: **#id, tên, ảnh** (dựng theo mục 5.3).
 
@@ -256,20 +263,20 @@ HomeViewModel:
 
 API không hỗ trợ fuzzy search → chỉ tìm **chính xác**:
 - Nhập tên hoặc id → chuẩn hóa (trim, lowercase) → gọi `/pokemon/{name|id}` theo mục 5.2.
-- Tìm thấy → `saveSummary` → kết quả **đọc từ storage** (`observeByNameOrId`). Toàn bộ trong `SearchPokemonUseCase`.
+- Tìm thấy → `refreshByNameOrId` lưu summary → kết quả **đọc từ storage** (`observeByNameOrId`). Toàn bộ trong `SearchPokemonUseCase` (`:business:domain`).
 - 404 → trạng thái "không tìm thấy". Offline → tìm chính xác trong storage.
 - Tắt search → quay về list hiện tại.
 
 ### 5.6. Details — có cache
 
-- `details:impl` gọi `/pokemon/{id}`, `/pokemon-species/{id}`, `/evolution-chain/{id}` → map → `saveDetail`, theo mục 5.2 (`ObservePokemonDetailUseCase`).
+- `:business:data` (`refreshDetail`) gọi `/pokemon/{id}`, `/pokemon-species/{id}`, `/evolution-chain/{id}` → map → lưu, theo mục 5.2 (`ObservePokemonDetailUseCase` ở `:business:domain`).
 - UI đọc `observeDetail(id)` (qua use case) sau khi fetch xong / xác nhận offline. Offline mà chưa có cache → màn lỗi + retry.
 
 ### 5.7. Favourite
 
-- `favourite:impl` có Room DB riêng, **chỉ lưu id** (+ thời điểm thêm để sắp xếp).
-- Dữ liệu hiển thị lấy từ `PokemonRepository` (đã có vì Details lưu trước khi user bấm favourite) → không cần snapshot, SSOT trọn vẹn.
-- `FavouriteRepository` **internal** trong `favourite:impl`. Details chỉ thấy `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase` trong `favourite:api`.
+- Favourite là business model riêng: `:business:domain` (`FavouritePokemon`, `FavouriteRepository` interface, use case observe / isFavourite / toggle / remove / clear); `:business:data` có Room DB riêng, **chỉ lưu id** (+ thời điểm thêm để sắp xếp).
+- Dữ liệu hiển thị lấy từ `PokemonRepository` (đã có vì Details lưu trước khi user bấm favourite) → không cần snapshot, SSOT trọn vẹn; `ObserveFavouritePokemonUseCase` ghép hai repository.
+- `:business:domain` không biết đăng nhập: `feature:favourite` ghép `auth:api` (chỉ hiện khi đã login) và đóng góp `SessionCleaner` (xóa khi logout). Details dùng `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase` của `:business:domain`.
 
 ### 5.8. Hình ảnh
 
@@ -375,7 +382,7 @@ Screen ──UiAction──▶ ViewModel ──▶ UseCase ──▶ Repository 
 ```
 
 - **Data source** được ném exception. **Repository** là chỗ duy nhất bắt exception và dịch thành `DataError` cụ thể (`Network.NoConnection`, `Network.Timeout`, `Network.Http(code)`, `NotFound`, `Local.Read`...), trả `DataResult`.
-- **UseCase** chứa logic nghiệp vụ (network-first, kết hợp nhiều repository), dịch `DataError` → `AppError`, luôn trả `AppResult` / `Flow<AppResult>`.
+- **UseCase** (`:business:domain`, hoặc trong feature cho phần riêng của màn hình) chứa logic nghiệp vụ (network-first, kết hợp nhiều repository), dịch `DataError` → `AppError`, luôn trả `AppResult` / `Flow<AppResult>`.
 - **ViewModel** chỉ inject use case + `Navigator`, chỉ xử lý `AppResult` → `UiState`. Không `try`/`catch`.
 - Kết quả nghiệp vụ (sai mật khẩu, chưa đăng nhập, dữ liệu offline) là giá trị trong `Success`; `Failure` chỉ cho lỗi kỹ thuật.
 - Luật là **quy ước bắt buộc** ghi trong layers.md (§5 là checklist review); chưa dùng thư viện kiểm tra tự động.
@@ -427,15 +434,15 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 
 - Mỗi module (core, data, feature, debugtool) có `src/test` riêng, và `src/androidTest` khi cần. **Không** có module chứa test của module khác.
 - `:core:testing` chỉ là thư viện tiện ích (Android library; module JVM thuần không dùng được): `MainDispatcherRule`, `TestDispatchers`, `runComposeScreenshot` / `runComposeScreenshotLightDark`, `ScreenshotDevices`.
-- Fake của interface public nằm trong `testFixtures` của module chứa contract — module `:api`, hoặc chính module nếu không tách (vd. `FakePokemonRepository` trong `data:pokemon:api`, `FakeNetworkMonitor` trong `core:connectivity`, `FakeNavigator` trong `core:navigation`); module khác dùng qua `testImplementation(testFixtures(projects.data.pokemon.api))`.
+- Fake của interface public nằm trong `testFixtures` của module chứa contract — module `:api`, hoặc chính module nếu không tách (vd. `FakePokemonRepository` trong `:business:domain`, `FakeFavourites` trong `:business:domain`, `FakeNetworkMonitor` trong `core:connectivity`, `FakeNavigator` trong `core:navigation`); module khác dùng qua `testImplementation(testFixtures(projects.business.domain))`.
 - Core có cả fake lẫn cài đặt thật thì thêm **contract test** trừu tượng trong testFixtures (`KeyValueStoreContract`, `SecureStorageContract`, `NavigatorContract`): cùng bộ test chạy cho fake và cho cài đặt thật, bảo đảm fake hành xử như thật.
 - Convention plugin tự thêm thư viện test theo loại module:
 
 | Loại module / layer | Loại test |
 |---|---|
 | ViewModel (fake use case) / UseCase (fake repository) / mapper / `PokemonImageUrls` / helper `networkFirst` | Unit test: JUnit, MockK, Turbine, coroutines-test |
-| Repository gọi API | MockWebServer (DTO parsing, dịch từng loại lỗi → `DataError`) |
-| Module có Room (`data:pokemon`, `favourite`) | DAO + luật merge với in-memory DB (Robolectric) |
+| Repository gọi API (`:business:data`) | MockWebServer (DTO parsing, dịch từng loại lỗi → `DataError`) |
+| Module có Room (`:business:data`) | DAO + luật merge với in-memory DB (Robolectric) |
 | UI (`impl`, `designsystem`, `ui`, `debugtool`) | Compose UI test (Robolectric), screenshot test (Roborazzi) trên các state mẫu |
 | `:app` | `androidTest` end-to-end cho navigation, deeplink, auth guard |
 
@@ -443,7 +450,7 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 
 ## 11. DI: Hilt (đã chốt)
 
-- Binding nằm trong `:impl`, hoặc trong Hilt module `internal` của module core không tách (`network`, `connectivity`, `navigation`, `deeplink`, `common-android`); chỉ tổng hợp ở `:app`.
+- Binding nằm trong `:impl`, `:business:domain` (use case), `:business:data` (repository, DB, API), hoặc trong Hilt module `internal` của module core không tách (`network`, `connectivity`, `navigation`, `deeplink`, `common-android`); chỉ tổng hợp ở `:app`.
 - Multibinding cho `EntryProviderInstaller`, `NavigationInterceptor`, `TopLevelDestination`, `DeepLinkHandler`, `Interceptor` (network).
 
 ## 12. Các thay đổi nhỏ đi kèm (đã làm ở T01–T03)
@@ -470,9 +477,9 @@ Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ng�
 - [x] Version: `version.properties`, sửa tay; cách tăng trên CI để sau.
 - [x] Tên module: `core:storage` / `core:securestorage`.
 - [x] Không có `core:locale`; ngôn ngữ do AppCompat lưu.
-- [x] `data:pokemon` là kho dữ liệu (SSOT), không gọi network; feature tự fetch rồi save.
+- [x] ~~`data:pokemon` là kho dữ liệu, không gọi network; feature tự fetch rồi save~~ → thay bằng: core business gom một chỗ — `:business:domain` (Kotlin thuần: model, repository interface, use case) / `:business:data` (API, DTO, Room, internal) cho Pokémon + Favourite; feature chỉ phụ thuộc `:business:domain` (2026-11-26).
 - [x] Module feature: `main` (khung tab), `home`, `details`, `favourite`, `profile`, `onboarding`, `auth`.
-- [x] Team Core sở hữu `core:*`, `data:*`, `build-logic`, `debugtool`; các team Feature sở hữu `feature:*`.
+- [x] Team Core sở hữu `core:*`, `business:*`, `build-logic`, `debugtool`; các team Feature sở hữu `feature:*`.
 - [x] Network-first: fetch trước, chỉ dùng cache khi xác nhận không có network; UI cập nhật một lần.
 - [x] List không dùng thư viện Paging; giới hạn ở tầng view.
 - [x] Search chính xác (tên / id).

@@ -6,8 +6,9 @@
 
 ```
 feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
-  data/            ← data source (Retrofit service, Room DAO), DTO, mapper DTO → model, Repository (interface + Impl)
-  domain/          ← UseCase (fun interface + Impl), model nội bộ của domain; ViewModel chỉ gọi use case
+  data/            ← CHỈ feature có dữ liệu riêng (onboarding, auth): data source, Repository (interface + Impl)
+  domain/          ← UseCase nội bộ (fun interface + Impl): dữ liệu riêng của feature, hoặc ghép use case của :business:domain cho màn hình
+                     (Pokémon / Favourite: model + use case ở :business:domain, API / Room ở :business:data — contracts.md §8, §8b)
   presentation/<screen>/
     <Screen>UiState.kt
     <Screen>UiAction.kt
@@ -24,7 +25,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
 - `Failure(e)` hiển thị dạng snackbar dùng `e.toUiMessage()` (core:ui), trừ khi screen nói khác.
 - Route nhận `modifier` và ViewModel mặc định `hiltViewModel()`.
 - Screen nhận thêm `snackbarHostState` nếu cần hiển thị `UiMessage`.
-- Test mỗi screen: `<Screen>ViewModelTest` (unit, fake use case), `<UseCase>Test` cho mỗi use case (fake repository), `<Repository>Test` cho mỗi repository (data source thật trong môi trường test, phủ bảng lỗi layers.md §2) + `<Screen>ScreenTest` (Compose UI test Robolectric: hiển thị đúng theo state, click phát đúng action) + `<Screen>ScreenshotTest` (Roborazzi trên các state mẫu của Previews).
+- Test mỗi screen: `<Screen>ViewModelTest` (unit, fake use case), `<UseCase>Test` cho mỗi use case nội bộ của feature (fake repository / fake use case), `<Repository>Test` cho mỗi repository của feature (data source thật trong môi trường test, phủ bảng lỗi layers.md §2) + `<Screen>ScreenTest` (Compose UI test Robolectric: hiển thị đúng theo state, click phát đúng action) + `<Screen>ScreenshotTest` (Roborazzi trên các state mẫu của Previews).
 
 ---
 
@@ -140,53 +141,9 @@ sealed interface LoginUiAction {
 
 Key: `HomeNavKey` (tab order 0, label `home_tab` Home/Trang chủ, icon Home).
 
-### 4.1. API (`data/`)
+### 4.1. Dữ liệu
 
-```kotlin
-interface HomeApi {
-    @GET("pokemon") suspend fun list(@Query("offset") offset: Int, @Query("limit") limit: Int): PokemonListDto
-    @GET("pokemon/{idOrName}") suspend fun pokemon(@Path("idOrName") idOrName: String): PokemonBasicDto
-}
-@Serializable data class PokemonListDto(val count: Int, val results: List<NamedResourceDto>)
-@Serializable data class NamedResourceDto(val name: String, val url: String)
-@Serializable data class PokemonBasicDto(val id: Int, val name: String)
-```
-
-Mapper: `NamedResourceDto` → `PokemonSummary(id = PokemonImageUrls.idFromResourceUrl(url), name, imageUrl = PokemonImageUrls.artworkUrl(id))` (bỏ item không parse được id). `PokemonBasicDto` → summary tương tự.
-
-```kotlin
-internal data class RemotePage(val items: List<PokemonSummary>, val totalCount: Int)
-internal interface PokemonRemoteRepository {
-    suspend fun fetchPage(offset: Int, limit: Int): DataResult<RemotePage>
-    /** query đã chuẩn hóa; 404 → Failure(NotFound). */
-    suspend fun fetchByNameOrId(query: String): DataResult<PokemonSummary>
-}
-```
-
-### 4.1b. Domain (`domain/`, internal)
-
-```kotlin
-const val PAGE_SIZE = 20
-internal data class PageResult(val visibleCount: Int, val isOffline: Boolean, val endReached: Boolean)
-internal sealed interface SearchOutcome {
-    data class Found(val pokemon: PokemonSummary, val isOffline: Boolean) : SearchOutcome
-    data object NotFound : SearchOutcome
-}
-
-internal fun interface ObservePokemonListUseCase { operator fun invoke(limit: Int): Flow<AppResult<List<PokemonSummary>>> }
-internal fun interface LoadPokemonPageUseCase { suspend operator fun invoke(offset: Int): AppResult<PageResult> }
-internal fun interface SearchPokemonUseCase { suspend operator fun invoke(query: String): AppResult<SearchOutcome> }
-```
-
-- `ObservePokemonList(limit)` = `pokemonRepository.observeList(limit).toAppResult()`.
-- `LoadPokemonPage(offset)`: `runNetworkFirst(networkMonitor::isOnlineNow) { remote.fetchPage(offset, PAGE_SIZE).flatMap { pokemonRepository.saveList(it.items, offset, it.totalCount) } }`; `target = offset + PAGE_SIZE`; `total` = `pokemonRepository.observeTotalCount().first()` (Failure → trả Failure); `endReached = total != null && target >= total`:
-  - `Fetched` → `Success(PageResult(target, isOffline = false, endReached))`.
-  - `Offline` → `pokemonRepository.observeList(target).first()`: `Success(list)` và `list.size > offset` → `Success(PageResult(target, isOffline = true, endReached))`; `Success` nhưng không có thêm item → `Failure(AppError.NoConnection)`; `Failure(e)` → `Failure(e.toAppError())`.
-  - `Failed(e)` → `Failure(e.toAppError())`.
-- `SearchPokemon(query)`: `q = query.trim().lowercase()` (rỗng → `Success(NotFound)`); `runNetworkFirst(...) { remote.fetchByNameOrId(q).flatMap(pokemonRepository::saveSummary) }`:
-  - `Fetched` → `observeByNameOrId(q).first()` → `Success(Found(it, isOffline = false))` / Failure theo `toAppError()`.
-  - `Offline` → `observeByNameOrId(q).first()` → `Success(Found(it, isOffline = true))`; `Failure(NotFound)` → `Failure(NoConnection)` (không biết có tồn tại hay không).
-  - `Failed(DataError.NotFound)` (API 404) → `Success(SearchOutcome.NotFound)`; `Failed(e)` khác → `Failure(e.toAppError())`.
+Không có `data/`, `domain/`. Dùng `ObservePokemonListUseCase`, `LoadPokemonPageUseCase`, `SearchPokemonUseCase`, `PageResult`, `SearchOutcome`, `POKEMON_PAGE_SIZE` của `:business:domain` (contracts.md §8.1; API / DTO / mapper ở `:business:data`, §8.2). Test ViewModel: fake use case bằng lambda.
 
 ### 4.2. State / action
 
@@ -253,42 +210,9 @@ ViewModel inject: `ObservePokemonListUseCase`, `LoadPokemonPageUseCase`, `Search
 
 Key: `DetailsNavKey(pokemonId)` (`RequiresAuth`).
 
-### 5.1. API
+### 5.1. Dữ liệu
 
-```kotlin
-interface DetailsApi {
-    @GET("pokemon/{id}") suspend fun pokemon(@Path("id") id: Int): PokemonDto
-    @GET("pokemon-species/{id}") suspend fun species(@Path("id") id: Int): SpeciesDto
-    @GET("evolution-chain/{id}") suspend fun evolutionChain(@Path("id") id: Int): EvolutionChainDto
-}
-@Serializable data class PokemonDto(
-    val id: Int, val name: String, val height: Int, val weight: Int,
-    @SerialName("base_experience") val baseExperience: Int? = null,
-    val types: List<TypeSlotDto>, val abilities: List<AbilitySlotDto>, val stats: List<StatDto>,
-    val sprites: SpritesDto, val species: NamedResourceDto,
-)
-@Serializable data class TypeSlotDto(val slot: Int, val type: NamedResourceDto)
-@Serializable data class AbilitySlotDto(val slot: Int, @SerialName("is_hidden") val isHidden: Boolean, val ability: NamedResourceDto)
-@Serializable data class StatDto(@SerialName("base_stat") val baseStat: Int, val stat: NamedResourceDto)
-@Serializable data class SpritesDto(val other: OtherSpritesDto? = null)
-@Serializable data class OtherSpritesDto(@SerialName("official-artwork") val officialArtwork: ArtworkDto? = null)
-@Serializable data class ArtworkDto(@SerialName("front_default") val frontDefault: String? = null)
-@Serializable data class SpeciesDto(@SerialName("evolution_chain") val evolutionChain: UrlDto)
-@Serializable data class UrlDto(val url: String)
-@Serializable data class EvolutionChainDto(val chain: ChainLinkDto)
-@Serializable data class ChainLinkDto(
-    val species: NamedResourceDto,
-    @SerialName("evolution_details") val evolutionDetails: List<EvolutionDetailDto> = emptyList(),
-    @SerialName("evolves_to") val evolvesTo: List<ChainLinkDto> = emptyList(),
-)
-@Serializable data class EvolutionDetailDto(
-    val trigger: NamedResourceDto, @SerialName("min_level") val minLevel: Int? = null, val item: NamedResourceDto? = null,
-)
-```
-
-`internal interface PokemonDetailRemoteRepository { suspend fun fetchDetail(id: Int): DataResult<PokemonDetail> }` — gọi 3 API + map **trong một** `dataResultOf(Throwable::toNetworkDataError)`. Thứ tự: `pokemon(id)` → species id = `idFromResourceUrl(species.url)` → `species(speciesId)` → chain id = `idFromResourceUrl(evolutionChain.url)` → `evolutionChain(chainId)` → map. Ảnh: `sprites.other.officialArtwork.frontDefault ?: artworkUrl(id)`. Stage tiến hóa: `PokemonSummary(speciesId, species.name, artworkUrl(speciesId))`; condition = `evolutionDetails.firstOrNull()`.
-
-Domain (internal): `fun interface ObservePokemonDetailUseCase { operator fun invoke(id: Int): Flow<AppResult<DataSnapshot<PokemonDetail>>> }` = `networkFirst(networkMonitor::isOnlineNow, fetch = { remote.fetchDetail(id).flatMap(pokemonRepository::saveDetail) }, observe = { pokemonRepository.observeDetail(id) })`.
+Không có `data/`, `domain/`. Dùng `ObservePokemonDetailUseCase` (`:business:domain`, contracts.md §8.1; 3 API pokemon → species → evolution-chain + mapper ở `:business:data`, §8.2) và `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase` (`:business:domain`, §8b).
 
 ### 5.2. State / action
 
@@ -307,7 +231,7 @@ sealed interface DetailsUiAction {
 }
 ```
 
-ViewModel inject: `ObservePokemonDetailUseCase`, `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase` (từ `favourite:api`), `Navigator`, `@Assisted pokemonId`.
+ViewModel inject: `ObservePokemonDetailUseCase` (`:business:domain`), `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase` (`:business:domain`), `Navigator`, `@Assisted pokemonId`.
 
 - `content` = `retryTrigger.flatMapLatest { observePokemonDetail(id).map { it.toLoadState() }.onStart { emit(LoadState.Loading) } }` (`toLoadState()` ở core:ui); Retry → phát `retryTrigger`.
 - `isFavourite` = `observeIsFavourite(id)`: `Success(b)` → `b`; `Failure` → `false` (không báo lỗi).
@@ -347,15 +271,15 @@ sealed interface FavouriteUiState {
 }
 sealed interface FavouriteUiAction {
     data object Login : FavouriteUiAction                       // Push(LoginNavKey(pending = null))
-    data object Retry : FavouriteUiAction                       // subscribe lại observeFavouritePokemon()
+    data object Retry : FavouriteUiAction                       // subscribe lại observeFavouriteState()
     data class OpenDetails(val pokemonId: Int) : FavouriteUiAction
     data class Remove(val pokemonId: Int) : FavouriteUiAction   // Success → message favourite_removed "Removed %1$s" / "Đã xóa %1$s" (tên lấy từ items); Failure → favourite_remove_error "Couldn't remove from favourites." / "Không xóa được khỏi danh sách yêu thích."
     data object MessageShown : FavouriteUiAction
 }
 ```
 
-- ViewModel inject: `ObserveFavouritePokemonUseCase`, `RemoveFavouriteUseCase` (internal, contracts.md §11), `Navigator`.
-- State = `observeFavouritePokemon()`: `Success(LoggedOut)` → LoggedOut; `Success(Items(empty))` → Empty; `Success(Items(list))` → Content (giữ `message` hiện có); `Failure(e)` → `Error(e)` → `ErrorState(onRetry = Retry)`.
+- ViewModel inject: `ObserveFavouriteStateUseCase` (internal, contracts.md §11), `RemoveFavouriteUseCase` (`:business:domain`), `Navigator`.
+- State = `observeFavouriteState()`: `Success(LoggedOut)` → LoggedOut; `Success(Items(empty))` → Empty; `Success(Items(list))` → Content(`list.map { it.pokemon }`, giữ `message` hiện có); `Failure(e)` → `Error(e)` → `ErrorState(onRetry = Retry)`.
 - Layout: `PokeTopAppBar(favourite_title "Favourites"/"Yêu thích")`. LoggedOut → `EmptyState(icon Lock, title favourite_login_title "Sign in to see your favourites" / "Đăng nhập để xem Pokémon yêu thích", actionText auth chung `favourite_login_action` "Sign in"/"Đăng nhập")`. Empty → `EmptyState(icon Favourite, favourite_empty_title "No favourites yet" / "Chưa có Pokémon yêu thích", favourite_empty_message "Tap the heart on a Pokémon to save it here." / "Bấm vào trái tim ở trang chi tiết để lưu Pokémon vào đây.")`. Content → grid giống Home, `MediaCard.action` = `IconButton(Delete, contentDescription favourite_remove "Remove from favourites"/"Xóa khỏi yêu thích")`.
 - Mở Details: theo screens §1.3.
 - Deeplink: `["favourite"]` → `ResetTo(listOf(FavouriteNavKey))`.

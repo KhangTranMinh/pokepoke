@@ -2,7 +2,7 @@
 
 > **Nguồn chuẩn** cho mọi type public trong module `:api` và module không tách (`core:common-kotlin`, `core:ui`...). Implement đúng tên, package, chữ ký. Được phép thêm member `internal`/`private`; **không** đổi chữ ký public mà không ghi vào [`docs/decisions.md`](../decisions.md).
 >
-> Quy ước package = namespace module: `com.khangtm.pokepoke.<nhóm>.<tên>[.api|.impl]`. Ví dụ `:core:storage:api` → `com.khangtm.pokepoke.core.storage.api`; module không tách như `:core:navigation` → `com.khangtm.pokepoke.core.navigation`.
+> Quy ước package = namespace module: `com.khangtm.pokepoke.<nhóm>.<tên>[.api|.impl]` (nhóm: `core`, `domain`, `data`, `feature`). Ví dụ `:core:storage:api` → `com.khangtm.pokepoke.core.storage.api`; module không tách như `:core:navigation` → `com.khangtm.pokepoke.core.navigation`.
 
 ---
 
@@ -10,7 +10,7 @@
 
 - `:core:common-kotlin` (Kotlin/JVM thuần, package `com.khangtm.pokepoke.core.common`): mọi type bên dưới trừ phần Hilt. Mọi module khác chỉ phụ thuộc module này.
 - `:core:common-android` (Android library, package `com.khangtm.pokepoke.core.common.android`): `AppInfoImpl` (đọc `PackageManager`) và Hilt module cung cấp dispatchers, `@ApplicationScope`, binding `AppInfo`. Chỉ `:app` phụ thuộc để Hilt gom binding.
-- `:core:storage:api`, `:core:securestorage:api`, `:data:pokemon:api` cũng là Kotlin/JVM thuần (không có `@Inject` class, không có Hilt module).
+- `:core:storage:api`, `:core:securestorage:api` cũng là Kotlin/JVM thuần (không có `@Inject` class, không có Hilt module).
 
 Kiểu kết quả của từng layer (luật dùng: [layers.md](layers.md)).
 
@@ -121,7 +121,7 @@ Hai module Android library **không tách `api`/`impl`**: phần public là inte
 
 ### 2.1. `:core:network`
 
-`api(retrofit)` + `api(okhttp)` để feature gọi API viết `interface XxxApi` (`@GET`...) và `:debugtool` viết OkHttp `Interceptor`; converter kotlinx-serialization là `implementation`.
+`api(retrofit)` + `api(okhttp)` để module `:business:data` gọi API viết `interface XxxApi` (`@GET`...) và `:debugtool` viết OkHttp `Interceptor`; converter kotlinx-serialization là `implementation`.
 
 ```kotlin
 package com.khangtm.pokepoke.core.network
@@ -145,7 +145,7 @@ fun Throwable.toNetworkDataError(): DataError
 
 Cài đặt (`internal`): OkHttpClient (connect 10s, read 15s, các interceptor từ `@AppInterceptors Set<Interceptor>`), `Json { ignoreUnknownKeys = true; explicitNulls = false; coerceInputValues = true }`, Retrofit với `asConverterFactory("application/json".toMediaType())`, `@Multibinds @AppInterceptors abstract fun interceptors(): Set<Interceptor>`. Manifest khai báo `INTERNET`.
 
-testFixtures: `createTestApiServiceFactory(baseUrl: String, interceptors: Set<Interceptor> = emptySet()): ApiServiceFactory` — `ApiServiceFactory` thật, cùng cấu hình Json / OkHttp / Retrofit với production, dùng trong test Repository của feature với `MockWebServer`: `testImplementation(testFixtures(projects.core.network))`.
+testFixtures: `createTestApiServiceFactory(baseUrl: String, interceptors: Set<Interceptor> = emptySet()): ApiServiceFactory` — `ApiServiceFactory` thật, cùng cấu hình Json / OkHttp / Retrofit với production, dùng trong test Repository của `:business:data` với `MockWebServer`: `testImplementation(testFixtures(projects.core.network))`.
 
 ### 2.2. `:core:connectivity`
 
@@ -325,10 +325,16 @@ interface DeepLinkIntentFactory {
 
 Xem [designsystem.md](designsystem.md) (chữ ký composable dùng chung).
 
-## 8. `:data:pokemon:api`
+## 8. Core business: `:business:domain` và `:business:data` — Pokémon
+
+Một chỗ duy nhất cho business cốt lõi của app (Pokémon §8, Favourite §8b). Luật chung: [layers.md](layers.md) §1.1. Feature chỉ phụ thuộc `:business:domain`; chỉ `:app` phụ thuộc `:business:data` (để Hilt gom binding). Không tạo thêm module business khác; dữ liệu chỉ một feature dùng nằm trong feature đó.
+
+### 8.1. `:business:domain` — model, repository interface, use case
+
+**Kotlin/JVM thuần** (build.md §3), package gốc `com.khangtm.pokepoke.business.domain`, phần Pokémon ở sub-package `.pokemon`. Không Android, không Retrofit / Room / DTO, không biết `NetworkMonitor`. Use case `Impl` + Hilt module (`...business.domain.di`, `hilt-core`) là `internal`.
 
 ```kotlin
-package com.khangtm.pokepoke.data.pokemon.api
+package com.khangtm.pokepoke.business.domain.pokemon
 
 data class PokemonSummary(val id: Int, val name: String, val imageUrl: String)
 
@@ -371,49 +377,130 @@ enum class StatType(val key: String) {
     companion object { fun fromKey(key: String): StatType }
 }
 
+// PokemonFormat.kt — format hiển thị dữ liệu (không phải text UI)
+object PokemonFormat {
+    fun displayId(id: Int): String = "#" + id.toString().padStart(4, '0')     // #0025, #1025, #10001
+    fun displayName(apiName: String): String   // "mr-mime" → "Mr Mime", "pikachu" → "Pikachu"
+}
+
 /**
- * Repository dùng chung (SSOT). Mọi hàm trả DataResult, không ném exception.
- * "Không có dữ liệu" của observe một bản ghi → Failure(DataError.NotFound).
+ * Repository (SSOT): observe* chỉ đọc local, refresh* gọi network rồi lưu (one-shot, layers.md §1.2).
+ * Mọi hàm trả DataResult, không ném exception. "Không có dữ liệu" của observe một bản ghi → Failure(DataError.NotFound).
+ * Cài đặt ở :business:data. Không có hàm save* public: cách lưu (luật merge) là việc của data.
  */
 interface PokemonRepository {
     /** Các Pokémon có vị trí trong list, sắp theo vị trí, tối đa `limit` (rỗng nếu chưa có). */
     fun observeList(limit: Int): Flow<DataResult<List<PokemonSummary>>>
     /** null = chưa từng lưu trang nào. */
     fun observeTotalCount(): Flow<DataResult<Int?>>
-    /** Upsert từng item (name, imageUrl) và gán vị trí offset + index. Không đụng dữ liệu detail. */
-    suspend fun saveList(items: List<PokemonSummary>, offset: Int, totalCount: Int): DataResult<Unit>
-    /** Upsert name/imageUrl, không đổi vị trí list, không đụng detail. */
-    suspend fun saveSummary(summary: PokemonSummary): DataResult<Unit>
     fun observeDetail(id: Int): Flow<DataResult<PokemonDetail>>
-    /** saveSummary(detail.summary) + upsert detail (cùng transaction). Không đổi vị trí list. */
-    suspend fun saveDetail(detail: PokemonDetail): DataResult<Unit>
     /** query đã chuẩn hóa (trim, lowercase). Toàn số → so id; còn lại → so name. */
     fun observeByNameOrId(query: String): Flow<DataResult<PokemonSummary>>
     /** Giữ thứ tự của `ids`, bỏ id không có trong storage. */
     fun observeSummaries(ids: List<Int>): Flow<DataResult<List<PokemonSummary>>>
+
+    /** Tải trang [offset, offset + limit) từ API rồi lưu (gán vị trí offset + index, cập nhật totalCount; không đụng detail). */
+    suspend fun refreshPage(offset: Int, limit: Int): DataResult<Unit>
+    /** query đã chuẩn hóa. Tải một Pokémon theo tên / id rồi lưu summary (không đổi vị trí list, không đụng detail). 404 → Failure(NotFound). */
+    suspend fun refreshByNameOrId(query: String): DataResult<Unit>
+    /** Tải detail (pokemon → species → evolution-chain) rồi lưu summary + detail trong một transaction (không đổi vị trí list). */
+    suspend fun refreshDetail(id: Int): DataResult<Unit>
 }
+
+const val POKEMON_PAGE_SIZE = 20
+data class PageResult(val visibleCount: Int, val isOffline: Boolean, val endReached: Boolean)
+sealed interface SearchOutcome {
+    data class Found(val pokemon: PokemonSummary, val isOffline: Boolean) : SearchOutcome
+    data object NotFound : SearchOutcome
+}
+
+fun interface ObservePokemonListUseCase { operator fun invoke(limit: Int): Flow<AppResult<List<PokemonSummary>>> }
+fun interface LoadPokemonPageUseCase { suspend operator fun invoke(offset: Int): AppResult<PageResult> }
+fun interface SearchPokemonUseCase { suspend operator fun invoke(query: String): AppResult<SearchOutcome> }
+fun interface ObservePokemonDetailUseCase { operator fun invoke(id: Int): Flow<AppResult<DataSnapshot<PokemonDetail>>> }
 ```
 
+Use case (`Impl` chỉ inject `PokemonRepository`). Kiểm tra offline nằm trong `refresh*` của data (trả `Network.NoConnection` ngay) nên use case gọi helper với `isOnline = { true }`:
+
+- `ObservePokemonList(limit)` = `repository.observeList(limit).toAppResult()`.
+- `LoadPokemonPage(offset)`: `runNetworkFirst({ true }) { repository.refreshPage(offset, POKEMON_PAGE_SIZE) }`; `target = offset + POKEMON_PAGE_SIZE`; `total` = `repository.observeTotalCount().first()` (Failure → trả Failure); `endReached = total != null && target >= total`:
+  - `Fetched` → `Success(PageResult(target, isOffline = false, endReached))`.
+  - `Offline` → `repository.observeList(target).first()`: `Success(list)` và `list.size > offset` → `Success(PageResult(target, isOffline = true, endReached))`; `Success` nhưng không có thêm item → `Failure(AppError.NoConnection)`; `Failure(e)` → `Failure(e.toAppError())`.
+  - `Failed(e)` → `Failure(e.toAppError())`.
+- `SearchPokemon(query)`: `q = query.trim().lowercase()` (rỗng → `Success(NotFound)`); `runNetworkFirst({ true }) { repository.refreshByNameOrId(q) }`:
+  - `Fetched` → `observeByNameOrId(q).first()` → `Success(Found(it, isOffline = false))` / Failure theo `toAppError()`.
+  - `Offline` → `observeByNameOrId(q).first()` → `Success(Found(it, isOffline = true))`; `Failure(NotFound)` → `Failure(NoConnection)` (không biết có tồn tại hay không).
+  - `Failed(DataError.NotFound)` (API 404) → `Success(SearchOutcome.NotFound)`; `Failed(e)` khác → `Failure(e.toAppError())`.
+- `ObservePokemonDetail(id)` = `networkFirst({ true }, fetch = { repository.refreshDetail(id) }, observe = { repository.observeDetail(id) })`.
+
+testFixtures:
+- `FakePokemonRepository` — in-memory, cùng luật merge với data. Có "server" giả do test cấu hình: `serverList: List<PokemonSummary>`, `serverDetails: Map<Int, PokemonDetail>`; `refreshPage` / `refreshByNameOrId` / `refreshDetail` chép từ server giả vào storage giả (không có trên server → `Failure(NotFound)`); `var refreshError: DataError?` (khác null → mọi `refresh*` trả Failure đó, storage không đổi); `var failWith: DataError?` (khác null → mọi hàm trả Failure); seed storage trực tiếp: `seedList(items, offset, totalCount)`, `seedSummary(summary)`, `seedDetail(detail)`; đếm lời gọi `refreshCalls`.
+- `PokemonFixtures` (bulbasaur/ivysaur/venusaur, eevee với 8 nhánh, pikachu).
+- Use case là `fun interface` → ViewModel test fake bằng lambda.
+
+### 8.2. `:business:data` — API, DTO, Room, cài đặt repository
+
+Android library (`pokepoke.android.library` + `pokepoke.hilt` + `pokepoke.room` + `pokepoke.kotlin.serialization`), namespace `com.khangtm.pokepoke.business.data`, phần Pokémon ở sub-package `.pokemon`. **Mọi thứ `internal`**; Hilt module (`...business.data.di`) bind `PokemonRepository`, cung cấp `PokemonApi` (`apiServiceFactory.create()`) và `PokemonDatabase` (`@Singleton`). Phụ thuộc: `api(projects.business.domain)`, `implementation(projects.core.network)`, `implementation(projects.core.connectivity)`; test: `testFixtures(projects.core.network)` (`createTestApiServiceFactory`), `testFixtures(projects.core.connectivity)` (`FakeNetworkMonitor`), MockWebServer, JSON mẫu thật của PokeAPI trong `src/test/resources`.
+
+
 ```kotlin
-// PokemonImageUrls.kt — nơi duy nhất chứa quy ước URL ảnh
-object PokemonImageUrls {
+// toàn bộ DTO là internal
+internal interface PokemonApi {
+    @GET("pokemon") suspend fun list(@Query("offset") offset: Int, @Query("limit") limit: Int): PokemonListDto
+    @GET("pokemon/{idOrName}") suspend fun pokemonBasic(@Path("idOrName") idOrName: String): PokemonBasicDto
+    @GET("pokemon/{id}") suspend fun pokemonDetail(@Path("id") id: Int): PokemonDto
+    @GET("pokemon-species/{id}") suspend fun species(@Path("id") id: Int): SpeciesDto
+    @GET("evolution-chain/{id}") suspend fun evolutionChain(@Path("id") id: Int): EvolutionChainDto
+}
+@Serializable data class PokemonDto(
+    val id: Int, val name: String, val height: Int, val weight: Int,
+    @SerialName("base_experience") val baseExperience: Int? = null,
+    val types: List<TypeSlotDto>, val abilities: List<AbilitySlotDto>, val stats: List<StatDto>,
+    val sprites: SpritesDto, val species: NamedResourceDto,
+)
+@Serializable data class PokemonListDto(val count: Int, val results: List<NamedResourceDto>)
+@Serializable data class NamedResourceDto(val name: String, val url: String)
+@Serializable data class PokemonBasicDto(val id: Int, val name: String)
+@Serializable data class TypeSlotDto(val slot: Int, val type: NamedResourceDto)
+@Serializable data class AbilitySlotDto(val slot: Int, @SerialName("is_hidden") val isHidden: Boolean, val ability: NamedResourceDto)
+@Serializable data class StatDto(@SerialName("base_stat") val baseStat: Int, val stat: NamedResourceDto)
+@Serializable data class SpritesDto(val other: OtherSpritesDto? = null)
+@Serializable data class OtherSpritesDto(@SerialName("official-artwork") val officialArtwork: ArtworkDto? = null)
+@Serializable data class ArtworkDto(@SerialName("front_default") val frontDefault: String? = null)
+@Serializable data class SpeciesDto(@SerialName("evolution_chain") val evolutionChain: UrlDto)
+@Serializable data class UrlDto(val url: String)
+@Serializable data class EvolutionChainDto(val chain: ChainLinkDto)
+@Serializable data class ChainLinkDto(
+    val species: NamedResourceDto,
+    @SerialName("evolution_details") val evolutionDetails: List<EvolutionDetailDto> = emptyList(),
+    @SerialName("evolves_to") val evolvesTo: List<ChainLinkDto> = emptyList(),
+)
+@Serializable data class EvolutionDetailDto(
+    val trigger: NamedResourceDto, @SerialName("min_level") val minLevel: Int? = null, val item: NamedResourceDto? = null,
+)
+```
+
+Mapper:
+- `NamedResourceDto` → `PokemonSummary(id = PokemonImageUrls.idFromResourceUrl(url), name, imageUrl = PokemonImageUrls.artworkUrl(id))` (bỏ item không parse được id). `PokemonBasicDto` → summary tương tự.
+- Detail: gọi 3 API + map **trong một** `dataResultOf(Throwable::toNetworkDataError)`. Thứ tự: `pokemonDetail(id)` → species id = `idFromResourceUrl(species.url)` → `species(speciesId)` → chain id = `idFromResourceUrl(evolutionChain.url)` → `evolutionChain(chainId)` → map. Ảnh: `sprites.other.officialArtwork.frontDefault ?: artworkUrl(id)`. Stage tiến hóa: `PokemonSummary(speciesId, species.name, artworkUrl(speciesId))`; condition = `evolutionDetails.firstOrNull()`.
+
+```kotlin
+// PokemonImageUrls.kt (internal) — nơi duy nhất chứa quy ước URL ảnh
+internal object PokemonImageUrls {
     const val ARTWORK_BASE_URL =
         "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/"
     fun artworkUrl(id: Int): String = "$ARTWORK_BASE_URL$id.png"
     /** ".../pokemon/25/", ".../pokemon-species/25/", ".../evolution-chain/10/" → id; không parse được → null */
     fun idFromResourceUrl(url: String): Int?
 }
-
-// PokemonFormat.kt — format hiển thị dữ liệu (không phải text UI)
-object PokemonFormat {
-    fun displayId(id: Int): String = "#" + id.toString().padStart(4, '0')     // #0025, #1025, #10001
-    fun displayName(apiName: String): String   // "mr-mime" → "Mr Mime", "pikachu" → "Pikachu"
-}
 ```
 
-testFixtures: `FakePokemonRepository` (in-memory, cùng luật merge; `var failWith: DataError?` → mọi hàm trả Failure để test nhánh lỗi), `PokemonFixtures` (bulbasaur/ivysaur/venusaur, eevee với 8 nhánh, pikachu).
+`internal class PokemonRepositoryImpl(api, dao, networkMonitor, @IoDispatcher)`:
+- `refresh*`: `networkMonitor.isOnlineNow() == false` → `Failure(Network.NoConnection)` ngay, không gọi API (không chờ timeout); còn lại = `dataResultOf(Throwable::toNetworkDataError) { api… → map }.flatMap { dataResultOf({ DataError.Local.Write(it) }) { dao.save…(it) } }`: lỗi network / map → `Network.*` / `NotFound`, storage không đổi; lỗi ghi → `Local.Write`.
+- `observe*` = Flow của DAO bọc `asDataResult { DataError.Local.Read(it) }` (Flow tạo lười trong `flow { emitAll(...) }`, decisions.md T13); `observeDetail` / `observeByNameOrId` map `null` → `Failure(NotFound)`.
+- DAO (`abstract class`) có `saveList(items, offset, totalCount)`, `saveSummary(summary)`, `saveDetail(detail)` (đều `@Transaction`) — luật merge bên dưới.
 
-**impl** — `internal class PokemonRepositoryImpl` (DAO là data source; đọc bọc `asDataResult { DataError.Local.Read(it) }`, ghi bọc `dataResultOf({ DataError.Local.Write(it) })`; `observeDetail` / `observeByNameOrId` map `null` → `Failure(NotFound)`). Room `PokemonDatabase` (`pokemon.db`, version 1, `fallbackToDestructiveMigration(dropAllTables = true)` vì là cache):
+Room `PokemonDatabase` (`pokemon.db`, version 1, `fallbackToDestructiveMigration(dropAllTables = true)` vì là cache):
 
 | Bảng | Cột |
 |---|---|
@@ -421,8 +508,50 @@ testFixtures: `FakePokemonRepository` (in-memory, cùng luật merge; `var failW
 | `pokemon_detail` | `pokemon_id` INT PK, `height` INT, `weight` INT, `base_experience` INT NULL, `types_json`, `abilities_json`, `stats_json`, `evolution_json` TEXT, `updated_at` INT |
 | `list_meta` | `id` INT PK (luôn 0), `total_count` INT |
 
-- JSON column dùng `@Serializable` record **internal** của impl (không gắn `@Serializable` lên business model).
+- JSON column dùng `@Serializable` record **internal** (không gắn `@Serializable` lên business model).
 - `saveList` trong transaction: với mỗi item → `INSERT OR IGNORE` + `UPDATE name, image_url`; `UPDATE pokemon SET list_position = NULL WHERE list_position = :pos AND id != :id`; `UPDATE pokemon SET list_position = :pos WHERE id = :id`; upsert `list_meta`.
+- `saveSummary` không đổi `list_position`, không đụng detail; `saveDetail` = `saveSummary(detail.summary)` + upsert detail, không đổi vị trí.
+
+## 8b. Core business: Favourite (trong `:business:domain` / `:business:data`)
+
+Favourite là business model riêng, dùng `PokemonSummary` của §8. Không biết gì về đăng nhập: chặn khi chưa login và xóa khi logout do `feature:favourite` lo (§11).
+
+### 8b.1. `:business:domain` — sub-package `.favourite`
+
+Use case `Impl` + binding Hilt `internal` (cùng Hilt module của domain).
+
+```kotlin
+package com.khangtm.pokepoke.business.domain.favourite
+
+data class FavouriteEntry(val pokemonId: Int, val addedAtEpochMillis: Long)
+data class FavouritePokemon(val pokemon: PokemonSummary, val addedAtEpochMillis: Long)
+
+/** Cài đặt ở :business:data. Mọi hàm trả DataResult. */
+interface FavouriteRepository {
+    fun observeFavourites(): Flow<DataResult<List<FavouriteEntry>>>     // mới thêm trước
+    fun observeIsFavourite(pokemonId: Int): Flow<DataResult<Boolean>>
+    suspend fun toggle(pokemonId: Int): DataResult<Boolean>              // transaction; trả trạng thái mới (true = vừa thêm)
+    suspend fun remove(pokemonId: Int): DataResult<Unit>
+    suspend fun clear(): DataResult<Unit>
+}
+
+/** observeFavourites() flatMapLatest PokemonRepository.observeSummaries(ids) → ghép addedAt, giữ thứ tự mới nhất trước, bỏ id không có summary. Failure ở bất kỳ bước nào → Failure. */
+fun interface ObserveFavouritePokemonUseCase { operator fun invoke(): Flow<AppResult<List<FavouritePokemon>>> }
+fun interface ObserveIsFavouriteUseCase { operator fun invoke(pokemonId: Int): Flow<AppResult<Boolean>> }
+/** Success(trạng thái SAU khi toggle: true = vừa thêm). */
+fun interface ToggleFavouriteUseCase { suspend operator fun invoke(pokemonId: Int): AppResult<Boolean> }
+fun interface RemoveFavouriteUseCase { suspend operator fun invoke(pokemonId: Int): AppResult<Unit> }
+fun interface ClearFavouritesUseCase { suspend operator fun invoke(): AppResult<Unit> }
+```
+
+testFixtures: `FakeFavouriteRepository` (in-memory, cùng luật, `var failWith: DataError?`); `FakeFavourites` implement cả 5 use case trên trên cùng một trạng thái: `val ids = MutableStateFlow<List<Int>>(emptyList())` (mới nhất trước), `val summaries: MutableMap<Int, PokemonSummary>`, `var failWith: AppError? = null` (khác null → mọi hàm trả Failure).
+
+### 8b.2. `:business:data` — sub-package `.favourite`
+
+Mọi thứ `internal`; Hilt bind `FavouriteRepository`, cung cấp `FavouriteDatabase` (`@Singleton`).
+
+- Room `FavouriteDatabase` (`favourite.db`, bảng `favourite(pokemon_id INT PK, added_at INT)`, `exportSchema = true`, **không** destructive migration — dữ liệu của user).
+- `added_at` = `System.currentTimeMillis()` lúc thêm. Đọc bọc `asDataResult { Local.Read }`, ghi bọc `dataResultOf({ Local.Write })`.
 
 ## Quy tắc `:feature:*:api`
 
@@ -433,7 +562,9 @@ testFixtures: `FakePokemonRepository` (in-memory, cùng luật merge; `var failW
 3. Model / enum mà chữ ký use case cần (vd. `AuthState`, `Session`).
 4. Extension point để module khác đóng góp vào (vd. `SessionCleaner`).
 
-Repository, DAO, DTO, use case nội bộ, ViewModel luôn `internal` trong `:impl`. Thêm use case vào api = thay đổi contract → ghi `docs/decisions.md`. (`data:pokemon:api` là ngoại lệ có chủ đích: public `PokemonRepository` dùng chung.)
+Repository, DAO, DTO, use case nội bộ, ViewModel luôn `internal` trong `:impl`. Thêm use case vào api = thay đổi contract → ghi `docs/decisions.md`.
+
+Business model, repository interface và use case dùng chung **không** đặt ở `:feature:*:api` mà ở `:business:domain` (§8, §8b). Feature Pokémon / Favourite không có `data/`; onboarding, auth, profile vẫn tự giữ dữ liệu của mình trong `:impl` (ngoài phạm vi `:business:domain`).
 
 Use case luôn trả `AppResult<T>` (suspend) hoặc `Flow<AppResult<T>>` (observe) — luật đầy đủ ở [layers.md](layers.md).
 
@@ -524,10 +655,6 @@ data object HomeNavKey : NavKey
 
 package com.khangtm.pokepoke.feature.favourite.api
 data object FavouriteNavKey : NavKey
-/** Dùng bởi details. */
-fun interface ObserveIsFavouriteUseCase { operator fun invoke(pokemonId: Int): Flow<AppResult<Boolean>> }
-/** Dùng bởi details. Success(trạng thái SAU khi toggle: true = vừa thêm). */
-fun interface ToggleFavouriteUseCase { suspend operator fun invoke(pokemonId: Int): AppResult<Boolean> }
 
 package com.khangtm.pokepoke.feature.profile.api
 data object ProfileNavKey : NavKey
@@ -536,28 +663,20 @@ package com.khangtm.pokepoke.feature.details.api
 data class DetailsNavKey(val pokemonId: Int) : NavKey, RequiresAuth
 ```
 
-favourite impl (`internal`):
+favourite impl (`internal`) — chỉ phần ghép với đăng nhập; dữ liệu favourite ở `:business:domain` / `:business:data` (§8b):
 
 ```kotlin
-internal interface FavouriteRepository {   // Room FavouriteDatabase
-    fun observeFavouriteIds(): Flow<DataResult<List<Int>>>   // mới thêm trước
-    fun observeIsFavourite(id: Int): Flow<DataResult<Boolean>>
-    suspend fun remove(id: Int): DataResult<Unit>
-    suspend fun toggle(id: Int): DataResult<Boolean>          // transaction; trả trạng thái mới
-    suspend fun clear(): DataResult<Unit>
+internal sealed interface FavouriteState {
+    data object LoggedOut : FavouriteState
+    data class Items(val items: List<FavouritePokemon>) : FavouriteState
 }
-internal sealed interface FavouritePokemon {
-    data object LoggedOut : FavouritePokemon
-    data class Items(val items: List<PokemonSummary>) : FavouritePokemon
-}
-/** observeAuthState() flatMapLatest: LoggedOut → LoggedOut; LoggedIn → observeFavouriteIds() flatMapLatest pokemonRepository.observeSummaries(ids) → Items. Failure ở bất kỳ bước nào → Failure. */
-internal fun interface ObserveFavouritePokemonUseCase { operator fun invoke(): Flow<AppResult<FavouritePokemon>> }
-internal fun interface RemoveFavouriteUseCase { suspend operator fun invoke(pokemonId: Int): AppResult<Unit> }
+/** ObserveAuthStateUseCase() flatMapLatest: LoggedOut → Success(LoggedOut); LoggedIn → ObserveFavouritePokemonUseCase() → Items. Failure ở bất kỳ bước nào → Failure. */
+internal fun interface ObserveFavouriteStateUseCase { operator fun invoke(): Flow<AppResult<FavouriteState>> }
 ```
 
-- Room `FavouriteDatabase` (`favourite.db`, bảng `favourite(pokemon_id INT PK, added_at INT)`, `exportSchema = true`, **không** destructive migration).
-- `FavouriteSessionCleaner : SessionCleaner` = `repository.clear().toAppResult()`.
-- testFixtures (`favourite:api`): `FakeFavourites` implement `ObserveIsFavouriteUseCase` + `ToggleFavouriteUseCase`: `val ids = MutableStateFlow<Set<Int>>(emptySet())`, `var failWith: AppError? = null` (khác null → mọi hàm trả Failure).
+- ViewModel dùng `ObserveFavouriteStateUseCase` (internal) + `RemoveFavouriteUseCase` (`:business:domain`).
+- `FavouriteSessionCleaner : SessionCleaner` (internal) = `ClearFavouritesUseCase()`.
+- Details dùng `ObserveIsFavouriteUseCase` / `ToggleFavouriteUseCase` từ `:business:domain` (không phụ thuộc `feature:favourite`); test bằng `FakeFavourites` (testFixtures của `:business:domain`).
 
 ## 12. `:feature:main:api`
 
