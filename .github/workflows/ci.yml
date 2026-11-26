@@ -13,6 +13,12 @@ concurrency:
 permissions:
   contents: read
 
+# ⏸ TẠM TẮT CI (theo yêu cầu user, 2026-11-26): job `build` vẫn chạy và báo xanh để ruleset cho merge,
+# nhưng bỏ qua mọi bước build / test. Bật lại: đổi thành "false" (docs/design/build.md §10).
+# Trong lúc tắt, agent vẫn phải chạy lệnh "Giống CI" ở local trước khi push.
+env:
+  CI_SKIP: "true"
+
 jobs:
   # ⚠️ `build` (job id + name) là status check BẮT BUỘC của ruleset `protect-main` trên GitHub
   # (Settings → Rules → Rulesets). Đổi tên job → phải sửa ruleset cùng lúc, nếu không mọi PR bị khóa
@@ -22,29 +28,39 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 60
     steps:
+      - name: CI skipped (CI_SKIP=true)
+        if: env.CI_SKIP == 'true'
+        run: echo "CI đang tạm tắt — không build / test. Xem docs/design/build.md §10."
+
       - uses: actions/checkout@v4
+        if: env.CI_SKIP != 'true'
 
       - uses: actions/setup-java@v4
+        if: env.CI_SKIP != 'true'
         with:
           distribution: temurin
           java-version: 21
 
       - uses: gradle/actions/setup-gradle@v4
+        if: env.CI_SKIP != 'true'
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       # Runner SDK may lack compileSdk 37.1; AGP auto-downloads it once licenses are accepted.
       - name: Accept Android SDK licenses
+        if: env.CI_SKIP != 'true'
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
       - name: Build, check, screenshots, coverage
+        if: env.CI_SKIP != 'true'
         run: ./gradlew :app:assembleQaDebug :app:assembleQaRelease check verifyRoborazziDebug koverVerify --stacktrace
 
       - name: Test build-logic (included build)
+        if: env.CI_SKIP != 'true'
         run: ./gradlew -p build-logic check --stacktrace
 
       - name: Upload reports on failure
-        if: failure()
+        if: failure() && env.CI_SKIP != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: build-reports

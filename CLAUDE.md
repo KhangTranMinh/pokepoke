@@ -20,7 +20,7 @@
   1. Bắt đầu: `git switch main && git pull --ff-only`, rồi `git switch -c task/Txx-<slug>` (vd. `task/T14-app-shell`). Commit docs-only: branch `docs/<slug>`.
   2. Implement → DoD xanh ở local → tick `[x]` trong `docs/tasks.md` → commit (quy tắc bên dưới).
   3. `git push -u origin <branch>` → tạo PR vào `main` bằng `gh pr create` (token theo mục trên). Tiêu đề PR = dòng đầu commit; body: tóm tắt, kết quả DoD, quyết định đã ghi vào `decisions.md`, cuối body có dòng attribution theo quy định của harness.
-  4. Chờ CI: `gh pr checks <số PR> --watch`. CI đỏ → sửa trên branch đó (xem quy tắc fixup bên dưới), push lại, chờ tới khi xanh.
+  4. Chờ CI: `gh pr checks <số PR> --watch`. ⏸ CI đang **tạm tắt** (`CI_SKIP` trong `ci.yml`, build.md §10): check `build` xanh ngay nên **bắt buộc** chạy lệnh "Giống CI" (build.md §9) ở local trước khi push và ghi kết quả vào body PR. CI đỏ → sửa trên branch đó (xem quy tắc fixup bên dưới), push lại, chờ tới khi xanh.
   5. **Dừng lại**: báo user link PR + tóm tắt + kết quả DoD / CI + quyết định. **Không merge.** Chờ user merge và yêu cầu task tiếp theo; task sau luôn bắt đầu lại từ bước 1 (`main` mới nhất).
 - **Mỗi task = đúng 1 commit** (bắt buộc):
   - Chỉ commit khi DoD đã xanh; không commit dở dang giữa chừng, không gộp 2 task vào 1 commit, không tách 1 task thành nhiều commit.
