@@ -3,7 +3,7 @@
 ## Git / GitHub authentication (BẮT BUỘC)
 
 - Remote: `https://github.com/KhangTranMinh/pokepoke.git` (branch chính: `main`).
-- **`main` được bảo vệ (ruleset):** không push thẳng, không force push; chỉ merge qua PR khi CI (`.github/workflows/ci.yml`) xanh; chỉ cho phép **Rebase and merge**. **Chỉ user merge PR** — agent không bao giờ merge, không bypass rule.
+- **`main` được bảo vệ (ruleset):** không push thẳng, không force push; chỉ merge qua PR khi CI (`.github/workflows/ci.yml`) xanh; chỉ cho phép **Create a merge commit** (mỗi PR là một "bong bóng" trên cây git: rẽ ra, 1 commit `Txx`, nhập lại bằng commit merge). **Chỉ user merge PR** — agent không bao giờ merge, không bypass rule.
 - **Chỉ được dùng token trong `configs/credentials/.env` (biến `GITHUB_TOKEN`)** cho mọi thao tác với GitHub của project này. KHÔNG dùng token/credential global (osxkeychain, `gh auth`, `GITHUB_TOKEN`/`GH_TOKEN` có sẵn trong shell, ...).
 - `git push/pull/fetch`: repo đã được cấu hình credential helper local (`git config --local credential.helper`) đọc token từ `configs/credentials/.env` và đã tắt helper global. Không sửa / không thêm helper khác; không nhúng token vào remote URL.
 - `gh` CLI / GitHub API: luôn truyền token từ file, ví dụ:

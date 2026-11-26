@@ -308,7 +308,7 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 |---|---|---|
 | `.github/workflows/ci.yml` | trong code | CI **chạy gì**, khi nào; mỗi lần chạy tạo check `build` (xanh / đỏ) trên commit / PR. Không tự chặn gì |
 | Ruleset `protect-main` (id `28142956`) | GitHub: Settings → Rules → Rulesets | **Có được merge không**: bắt buộc PR, check `build` xanh... |
-| Cài đặt merge | GitHub: Settings → General → Pull Requests | Chỉ Rebase and merge, tự xóa branch sau merge |
+| Cài đặt merge | GitHub: Settings → General → Pull Requests | Chỉ Create a merge commit, tự xóa branch sau merge |
 
 ⚠️ **Đổi tên job `build` trong `ci.yml` → phải sửa ruleset cùng lúc**; nếu không, ruleset chờ một check không bao giờ xuất hiện → mọi PR bị khóa. Ruleset / cài đặt không nằm trong code: đổi qua web hoặc `gh api repos/KhangTranMinh/pokepoke/rulesets/28142956` (token cần quyền Administration).
 
@@ -316,4 +316,5 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 - Bắt buộc PR, **0 approval** (PR do agent tạo bằng token của user → tác giả là user, GitHub không cho tự approve; "review" = user bấm merge).
 - Bắt buộc status check `build` xanh, branch phải cập nhật theo `main` (strict).
 - Cấm force push, cấm xóa branch; **không có bypass** (kể cả admin — token của agent mang quyền admin).
-- Repo chỉ bật **Rebase and merge** (tắt merge commit, squash) → commit `Txx: …` lên `main` nguyên vẹn (1 task = 1 commit, giữ `Co-Authored-By`).
+- Repo chỉ bật **Create a merge commit** (tắt squash, rebase); ruleset cho phép duy nhất cách `merge`, **không** bật *Require linear history*. Mỗi PR trên `main` = commit `Txx: …` (nguyên vẹn, giữ `Co-Authored-By`) + commit `Merge pull request #N from <branch>` → cây git thấy rõ từng task rẽ ra / nhập vào; `git log --first-parent main` chỉ hiện các commit merge (mỗi dòng một PR); gỡ cả task: `git revert -m 1 <merge>`.
+- Branch phải cập nhật theo `main` trước khi merge (strict): agent `git rebase main` trên branch chưa merge rồi `--force-with-lease` (giữ branch 1 commit, bong bóng gọn).
