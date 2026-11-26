@@ -302,6 +302,8 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 - **Chỉ build `qaDebug` + `qaRelease`** (không cần khóa release; `qaRelease` kiểm tra R8 / minify). `check` vẫn chạy unit test mọi variant của `:app` và mọi module, `verifyReleaseHasNoDebugTool`, `verifyModuleDependencies`, lint.
 - Không có secret nào. Khi cần CI build `prodRelease`: tạo `configs/signing/release.*` từ GitHub Secrets trong một job riêng (chưa làm).
 
+- ⏸ **Tạm tắt** (2026-11-26, theo yêu cầu): `env.CI_SKIP: "true"` trong `ci.yml` → job `build` chỉ in một dòng rồi xanh (ruleset vẫn thỏa). Trong lúc tắt, agent **bắt buộc** chạy lệnh "Giống CI" (mục 9) ở local trước khi push và ghi kết quả vào body PR. Bật lại: `CI_SKIP: "false"` (một PR).
+
 **Hai nơi cấu hình, nối với nhau bằng tên check `build`:**
 
 | Nơi | Ở đâu | Quyết định |
