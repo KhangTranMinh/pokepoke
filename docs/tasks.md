@@ -142,6 +142,20 @@
   - Tạm cho một ViewModel kế thừa `AndroidViewModel`: fail. Hoàn lại.
   - Sửa một ViewModel ngay sau lần chạy xanh rồi chạy lại `:konsist:test`: test chạy lại, không "up-to-date".
   - Tạm thêm `implementation(projects.core.commonKotlin)` vào `:konsist`: `verifyModuleDependencies` fail. Hoàn lại.
+- [ ] **T15f — CD: Firebase App Distribution (task chèn thêm).** Đọc build.md §4, §4a, §4b, §10, §12; CLAUDE.md (secret, signing). Tạo `.github/workflows/cd.yml` đúng build.md §12.2. `ci.yml`: thêm `release/**` vào `on.pull_request.branches` và `on.push.branches` (§12.5). Không sửa `build-logic`.
+  - 2 job `distribute-qa` / `distribute-prod`, dùng GitHub Environment `qa` / `prod`; trigger (qa: push `release/**` + `paths: version.properties`, hoặc `workflow_dispatch`; prod: tag `v*`, hoặc `workflow_dispatch`), runner, `concurrency`, `permissions` đúng §12.2.
+  - Mọi secret ghi ra file bằng `printf '%s'` qua `env:`, không echo. File secret (`firebase-sa.json`, `release.*`) nằm ở `$RUNNER_TEMP` hoặc `configs/signing/` và được xoá ở bước `if: always()`.
+  - Prod: kiểm tra tag khớp `version.properties` và commit nằm trên `release/*` trước khi build. Ghi chú phát hành theo §12.2. Firebase CLI pin `firebase-tools@15.37.0` (`npx --yes`). Upload APK làm artifact (14 ngày).
+  - `FIREBASE_APP_ID` / `FIREBASE_GROUPS` commit trong `env:` của từng job, giá trị theo bảng build.md §12.3. Chỉ `FIREBASE_SERVICE_ACCOUNT` (và khóa release của prod) lấy từ Environment secret.
+  - Comment trong `cd.yml` trỏ build.md §12; ghi rõ Environment / secret cần có.
+  - Cập nhật bảng lệnh / mục CI trong `CLAUDE.md` nếu cần: một dòng "CD: `cd.yml`, build.md §12".
+  - Ghi `decisions.md`.
+  DoD:
+  - `actionlint .github/workflows/cd.yml` sạch (cài tạm vào thư mục tạm, ngoài repo, nếu máy chưa có).
+  - Local: `./gradlew :app:assembleQaRelease` xanh, APK nằm đúng đường dẫn mà `cd.yml` dùng.
+  - Chạy thử bằng tay đoạn script của bước "release notes" và "kiểm tra tag" trong một bản clone tạm: tag khớp và nằm trên `release/*` thì qua; `v9.9.9` thì fail rõ ràng; tag trên commit chỉ có ở `main` thì fail rõ ràng.
+  - `git grep -nE 'echo .*\$\{\{ *secrets' .github` không có kết quả.
+  - Workflow mới chỉ chạy được sau khi merge (`workflow_dispatch` cần file nằm trên `main`). Kiểm chứng thật (user làm sau khi xong build.md §12.4): Actions → CD → Run workflow → tester nhận bản qa. Ghi bước này vào body PR, **không** tick thay user.
 - [ ] **T16 — `:feature:auth`.** Đọc screens.md §3, contracts.md §10. Repository, `LoginUseCase`, `TokenGenerator`, `Clock` (internal); `ObserveAuthStateUseCase`/`LogoutUseCase` (api) + `FakeAuthSession`; interceptor, `SessionCleaner` set, screen.
   Test: repository (FakeSecureStorage, lỗi storage → `Local.*`); login đúng / sai / trim username / lỗi ghi → Failure, token 32 byte ngẫu nhiên; logout xóa session + gọi mọi cleaner (cleaner hoặc clearSession lỗi → vẫn chạy hết, trả Failure đầu tiên); `ObserveAuthState` phát lại khi login / logout; ViewModel (`LoggedIn` / `InvalidCredentials` / Failure → message); interceptor cho Push / ReplaceTop / ResetTo / không RequiresAuth / đã login; ViewModel; UI + screenshot (trống, lỗi, đang gửi).
   DoD: như T15 cho auth.
