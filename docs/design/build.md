@@ -53,6 +53,7 @@ espresso = "3.7.0"
 turbine = "1.2.1"
 mockk = "1.14.12"
 robolectric = "4.18.1"
+konsist = "0.18.1"        # test kiến trúc (module :konsist); 1.0.0 mới là beta
 ```
 
 ### 1.1. Thư viện (artifact)
@@ -93,6 +94,7 @@ Cột "Alias gợi ý" là alias trong catalog `pokepoke` hoặc `libs` — phâ
 | tink-android | `com.google.crypto.tink:tink-android` |
 | junit, androidx-test-junit, espresso-core, turbine, mockk, robolectric | như tên |
 | roborazzi / roborazzi-compose / roborazzi-junit-rule | `io.github.takahirom.roborazzi:*` |
+| konsist | `com.lemonappdev:konsist` — catalog `libs`, chỉ `:konsist` (`testImplementation`) |
 | tomlj | `org.tomlj:tomlj` — chỉ `build-logic/convention` (`implementation`: chạy lúc build, khác các Gradle plugin `compileOnly`) |
 
 ### 1.2. Plugin
@@ -131,7 +133,7 @@ Bảng version ở §1 / §1.1 / §1.2 vẫn là nguồn chuẩn cho **giá tr�
 |---|---|---|---|
 | `gradle/pokepoke.versions.toml` | `pokepoke` | Mọi thứ `build-logic` đọc hoặc tự thêm: version SDK / JVM (`compileSdk`, `compileSdkMinor`, `minSdk`, `targetSdk`, `jvm`); artifact Gradle plugin (AGP, KGP, compose compiler, KSP, Hilt, Room, Kover, Roborazzi) + `[plugins]` tương ứng + alias convention plugin `pokepoke-*`; thư viện plugin tự thêm (Compose BOM + ui / foundation / material3 / icons / tooling / test, hilt-android / compiler / testing, room-*, kotlinx-serialization-json, kotlinx-coroutines-core / test, lifecycle-runtime / viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive*, junit, mockk, turbine, robolectric, androidx-test-junit, roborazzi*); `tomlj`; cùng họ version với các thư viện trên: `hilt-core`, `kotlinx-coroutines-android`, `androidx-navigation3-ui`, `androidx-lifecycle-viewmodel-navigation3` (để một version chỉ khai báo một lần) | `build-logic` (`Catalog.kt`, `build-logic/settings.gradle.kts`); module `:core:*` và module khác dùng trực tiếp khi cần (`pokepoke.junit`, `pokepoke.plugins.pokepoke.android.library`...) |
 | `gradle/core.versions.toml` | `coreLibs` | Thư viện ngoài của module `:core:*` (từ T15d, mục 11): `javax-inject`, `retrofit`, `retrofit-converter-kotlinx-serialization`, `okhttp`, `okhttp-mockwebserver`, `androidx-datastore-preferences`, `tink-android` | `core/**`; module khác khi cần (vd. `coreLibs.retrofit` ở `:business:data`). `build-logic` **không** đọc |
-| `gradle/libs.versions.toml` | `libs` | Thư viện riêng của app mà module tự khai báo: coil, startup, activity-compose, core-ktx, splashscreen, appcompat, material3-navigation-suite, espresso | Module ngoài `:core:*` (`:ui:*`, `:business:*`, `:feature:*`, `:app`, `:debugtool`); `core/**` không dùng |
+| `gradle/libs.versions.toml` | `libs` | Thư viện riêng của app mà module tự khai báo: coil, startup, activity-compose, core-ktx, splashscreen, appcompat, material3-navigation-suite, espresso, konsist | Module ngoài `:core:*` (`:ui:*`, `:business:*`, `:feature:*`, `:app`, `:debugtool`); `core/**` không dùng |
 
 - **Mỗi artifact (`group:name`) nằm ở đúng một catalog** (kể cả cùng version): trùng → Gradle âm thầm chọn bản cao hơn, khó phát hiện. Test `CatalogConsistencyTest` trong `build-logic` đọc cả ba file (tomlj), fail nếu trùng `group:name` (library) hoặc trùng plugin id giữa hai file bất kỳ, nếu `version.ref` trỏ ngoài `[versions]` của chính file, hoặc nếu alias / version / plugin id mà convention plugin dùng không có trong `pokepoke.versions.toml`. Version tham chiếu (`version.ref`) chỉ trỏ tới `[versions]` **cùng file**.
 - Root `settings.gradle.kts` khai báo cả `pokepoke` và `coreLibs`: `versionCatalogs { create("pokepoke") { from(files("gradle/pokepoke.versions.toml")) }; create("coreLibs") { from(files("gradle/core.versions.toml")) } }` (`libs` vẫn được Gradle tự tạo từ `gradle/libs.versions.toml`).
@@ -371,6 +373,7 @@ Thêm key mới: thêm vào `config.toml` (hoặc `secrets.example.toml` + `secr
 | `:business:**` | `:ui:**`, `:feature:**` (business không biết UI, kể cả string) |
 | `:debugtool` | `:business:**`, `:feature:**` |
 | `:ui:translation` | mọi module khác (chỉ chứa resource, không phụ thuộc gì) |
+| `:konsist` | mọi module khác (test kiến trúc đọc source dạng file, không cần phụ thuộc module) |
 
 Ngoại lệ: `testFixtures(project(X))` được tính như phụ thuộc vào X (áp luật bình thường).
 

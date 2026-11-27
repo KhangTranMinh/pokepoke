@@ -114,6 +114,34 @@
   - Tạm thêm `implementation(projects.ui.translation)` vào `:core:network`: `verifyModuleDependencies` fail kèm `reason` từ `structure.toml`. Hoàn lại.
   - Tạm thêm `implementation(projects.ui.common)` vào `:business:data`: fail tương tự. Hoàn lại.
   - `verifyRoborazziDebug` xanh, không có ảnh diff.
+- [ ] **T15e — `UiText` (text không phụ thuộc nguồn) + test kiến trúc Konsist (task chèn thêm).** Đọc designsystem.md §2; contracts.md §1 (`DataError`, `AppError`), §network (`toNetworkDataError`); layers.md §1, §5; build.md §1, §1.1, §1.4, §5; plan.md §4; CLAUDE.md (Layer). Mục tiêu: ViewModel không biết `Context`; View hiển thị text như nhau dù từ `strings.xml` hay server.
+  1. **`UiText`** (`:ui:common`, đúng chữ ký designsystem.md §2):
+     - `sealed interface UiText { Raw; Res }` và `@Composable fun UiText.asString()`. Phần tử `args` là `UiText` thì resolve lồng nhau.
+     - `UiMessage(text: UiText, id)` và constructor phụ `UiMessage(@StringRes textRes, args)`. `MessageEffect` dùng `asString()`.
+     - `AppError.titleText()` / `messageText()` / `toUiMessage()`; `titleRes()` / `messageRes()` thành `internal`.
+     - `ErrorState` / `LoadMoreFooter` dùng `titleText()` / `messageText()`.
+     - Sửa mọi chỗ đang dùng `UiMessage` / `textRes` (onboarding, main, app...).
+  2. **`serverMessage`** (contracts.md): thêm `val serverMessage: String? = null` vào `DataError.Network.Http` và `AppError.Server`. `toAppError()` chuyển tiếp giá trị này. `toNetworkDataError()` giữ `null` (chưa parse body lỗi).
+  3. **Module `:konsist`** (plan.md §4):
+     - `pokepoke.jvm.library`, chỉ có `src/test`; `testImplementation(libs.konsist)` (`0.18.1`, catalog `libs`, build.md §1 / §1.1 / §1.4).
+     - `tasks.test` khai báo input là mọi `**/src/main/kotlin/**/*.kt` của repo (trừ `build/`), để sửa source ở module khác thì test chạy lại.
+     - `structure.toml`: thêm luật `:konsist` không phụ thuộc `**` (build.md §5).
+     - Test `ViewModelRulesTest`, theo layers.md §5:
+       - Luật 11 (mọi `*ViewModel`): không import `Context` / `Resources` / `Application`, không kế thừa `AndroidViewModel`, không có tham số `@ApplicationContext`.
+       - Luật 3 (`*ViewModel` trong `feature/`): tham số constructor chỉ là `*UseCase`, `Navigator`, hoặc `@Assisted`.
+  4. Ghi `decisions.md`.
+  Test:
+  - `ui:common`: `asString()` của `Raw`, của `Res` có args, của `Res` lồng `UiText`; `messageText()` của `Server` có / không có `serverMessage`; `toUiMessage()`.
+  - `ErrorState` có thêm screenshot với `Server(500, "Maintenance")`.
+  - `core:common-kotlin`: `Http(c, m).toAppError() == Server(c, m)`.
+  - Ảnh screenshot cũ giữ nguyên.
+  DoD:
+  - `./gradlew -p build-logic check` và lệnh "Giống CI" (build.md §9) xanh; `./gradlew :konsist:test` chạy thật, không "up-to-date" / "NO-SOURCE".
+  - `git grep -n 'textRes' -- '*.kt'` chỉ còn constructor phụ của `UiMessage`.
+  - Tạm thêm `@ApplicationContext private val context: Context` vào một ViewModel có sẵn (vd. `OnboardingViewModel`): `./gradlew check` fail, message có tên class và đường dẫn file. Hoàn lại.
+  - Tạm cho một ViewModel kế thừa `AndroidViewModel`: fail. Hoàn lại.
+  - Sửa một ViewModel ngay sau lần chạy xanh rồi chạy lại `:konsist:test`: test chạy lại, không "up-to-date".
+  - Tạm thêm `implementation(projects.core.commonKotlin)` vào `:konsist`: `verifyModuleDependencies` fail. Hoàn lại.
 - [ ] **T16 — `:feature:auth`.** Đọc screens.md §3, contracts.md §10. Repository, `LoginUseCase`, `TokenGenerator`, `Clock` (internal); `ObserveAuthStateUseCase`/`LogoutUseCase` (api) + `FakeAuthSession`; interceptor, `SessionCleaner` set, screen.
   Test: repository (FakeSecureStorage, lỗi storage → `Local.*`); login đúng / sai / trim username / lỗi ghi → Failure, token 32 byte ngẫu nhiên; logout xóa session + gọi mọi cleaner (cleaner hoặc clearSession lỗi → vẫn chạy hết, trả Failure đầu tiên); `ObserveAuthState` phát lại khi login / logout; ViewModel (`LoggedIn` / `InvalidCredentials` / Failure → message); interceptor cho Push / ReplaceTop / ResetTo / không RequiresAuth / đã login; ViewModel; UI + screenshot (trống, lỗi, đang gửi).
   DoD: như T15 cho auth.

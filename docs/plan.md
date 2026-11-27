@@ -141,6 +141,9 @@ versionCode=12
 :feature:favourite:api / :impl    ← tab Favourite (:business:domain + auth:api: chỉ hiện khi đã đăng nhập, xóa khi logout)
 :feature:profile:api / :impl      ← tab Me: thông tin đăng nhập, phiên bản, đổi ngôn ngữ, logout
 
+# Kiểm tra kiến trúc
+:konsist                          ← (JVM, chỉ có test) test kiến trúc bằng Konsist: đọc source cả repo, kiểm luật layers.md §5 có 🤖
+
 # Debug — chỉ gắn vào debug build
 :debugtool                        ← network log, xem / query local DB, xem local storage (mục 8)
 ```
