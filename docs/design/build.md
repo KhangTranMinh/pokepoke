@@ -518,6 +518,7 @@ Hai Firebase project, mỗi môi trường một project. Prod tách khỏi qa: 
         env: { type: choice, options: [qa, prod], required: true }
   ```
   - `paths` chỉ lọc push lên branch, push tag luôn chạy.
+  - **Push tạo branch `release/*` không bao giờ build**, kể cả khi commit đó có sửa `version.properties` (`github.event.created == false` trong `if:` của job qa). Chỉ các push sau đó, tức PR đã merge có đổi `version.properties`, mới build. `workflow_dispatch` không bị ảnh hưởng.
   - Job chọn bằng `if:`. `qa` chạy khi `github.ref` bắt đầu `refs/heads/release/`, hoặc khi dispatch với `inputs.env == 'qa'`. `prod` chạy khi `github.ref` bắt đầu `refs/tags/v`, hoặc khi dispatch với `inputs.env == 'prod'`.
 - **Vì sao chỉ build khi đổi version:**
   - PR fix bug vào release không đụng `version.properties`, nên không build. Tester chỉ nhận bản khi có PR bump version.
@@ -530,7 +531,8 @@ Hai Firebase project, mỗi môi trường một project. Prod tách khỏi qa: 
 - **Không bị `CI_SKIP` ảnh hưởng:** `CI_SKIP` chỉ nằm trong `ci.yml`.
 - **Kiểm tra trước khi build prod** (sai thì fail, message rõ ràng):
   1. Tag phải đúng `v<versionMajor>.<versionMinor>.<versionPatch>` đọc từ `version.properties` của commit được tag.
-  2. Commit được tag phải nằm trên một branch `release/*` (`git branch -r --contains "$GITHUB_SHA"` có `origin/release/`). Không phát prod từ `main`.
+  2. Commit được tag phải nằm trên đúng branch `release/<tag>` (tag `v1.2.0` → `origin/release/v1.2.0`): `git branch -r --contains "$(git rev-parse HEAD)"` phải có `origin/release/<tag>`. Tức tag = `version.properties` = branch `release/<tag>`. Không phát prod từ `main` hay từ branch release của version khác.
+- **Kiểm tra trước khi build qa** (sai thì fail, message rõ ràng): tên branch đang chạy (`github.ref_name`, vd. `release/v1.2.0`) phải bằng `release/v<versionMajor>.<versionMinor>.<versionPatch>` đọc từ `version.properties`. Vd. "branch release/v1.2.0 nhưng version.properties là 1.2.1". Vì vậy PR đầu tiên trên mỗi branch release phải là PR bump version.
 - **Ghi chú phát hành (release notes):** dòng đầu là `<versionName> (<versionCode>) · <7 ký tự SHA commit>`, sau đó là danh sách commit (`git log --no-merges --pretty='- %s'`):
   - `qa`: các commit từ lần đổi `version.properties` trước đó tới HEAD, tối đa 30. Lấy bằng `git log -n 2 --format=%H -- version.properties`: dòng thứ hai là mốc.
   - `prod`: các commit từ tag `v*` trước đó tới tag hiện tại. Nếu chưa có tag trước thì lấy 30 commit gần nhất.
@@ -585,31 +587,44 @@ Hai Firebase project, mỗi môi trường một project. Prod tách khỏi qa: 
    - ✅ Tạo `qa` và `prod`, thêm secret theo bảng 12.3.
    - `prod`: bật Required reviewers và giới hạn tag `v*`.
 6. **Xoá file key JSON ở máy** sau khi đã dán vào secret.
-7. **Chạy thử:** tạo `release/v1.0` từ `main` (§12.5), rồi Actions → CD → *Run workflow* → branch `release/v1.0`, `env = qa`; hoặc merge một PR bump version vào branch đó. Tester nhận email mời và cài bằng app *Firebase App Tester*.
+7. **Chạy thử:** tạo `release/v1.0.0` từ `main` (§12.5; `version.properties` phải là 1.0.0), rồi Actions → CD → *Run workflow* → branch `release/v1.0.0`, `env = qa`; hoặc merge một PR bump version vào branch đó. Tester nhận email mời và cài bằng app *Firebase App Tester*.
 
-### 12.5. Quy trình release (branch `release/vX.Y`)
+### 12.5. Quy trình release (mỗi version một branch `release/vX.Y.Z`)
+
+Quy ước: **một branch cho một version**. Tên branch `release/vX.Y.Z` phải bằng tag `vX.Y.Z` và `version.properties`. Nhìn tên branch là biết đang test version nào, và hai kiểm tra của §12.2 chỉ là so sánh chuỗi.
 
 ```
-main ──●──●──●───────────────────────●(merge về)──●──
-            \                        /
-   release/v1.2 ●bump──●fix──●fix──●bump──●tag v1.2.0
-                 │qa                │qa    │prod (user duyệt)
+main ──●──●──●───────────────────────────●(merge về)──●──
+            \                            /
+   release/v1.2.0 ●version──●fix──●fix──●bump──●tag v1.2.0
+                   │không build          │qa    │prod (user duyệt)
 ```
+
+Luồng của user:
+
+1. Tạo `release/vX.Y.Z` **ở máy** từ `main` (hotfix thì từ tag `vX.Y.(Z-1)`, không từ `main`, để tính năng chưa phát hành không lẫn vào).
+2. Commit sửa `versionName` + `versionCode` trong `version.properties` cho khớp tên branch.
+3. Push branch **mới** (`git push -u origin release/vX.Y.Z`). **Không build**: push tạo branch bị bỏ qua (§12.2).
+4. Các PR fix vào branch: không đụng `version.properties` nên không build.
+5. PR bump cuối cùng (tăng `versionCode`): merge xong thì build qa.
 
 | Việc | Branch / PR | Ai làm | Build |
 |---|---|---|---|
-| **Cắt release** | tạo `release/vX.Y` từ `main` (GitHub UI hoặc `git push origin main:refs/heads/release/vX.Y`) | user | — |
-| **Bump version** | branch `bump/vX.Y.Z-<versionCode>` từ `release/vX.Y`, chỉ sửa `version.properties`; PR vào `release/vX.Y` | agent hoặc user | qa |
-| **Fix bug của bản release** | branch `fix/<slug>` từ `release/vX.Y`, PR vào `release/vX.Y` (1 commit, như task) | agent | — |
-| **Phát prod** | `git tag vX.Y.Z <commit trên release/vX.Y> && git push origin vX.Y.Z` | user | prod |
-| **Đưa fix về `main`** (lúc nào cũng được, nên làm sớm để ít conflict) | branch `merge/release-vX.Y-<ngày>` tạo từ `release/vX.Y` rồi `git merge origin/main` (giải conflict ở đây); PR vào `main` | agent hoặc user | — |
+| **Cắt release** (mới hoặc hotfix) | tạo `release/vX.Y.Z` ở máy, commit sửa version, `git push -u origin release/vX.Y.Z` | user | — |
+| **Fix bug của bản release** | branch `fix/<slug>` từ `release/vX.Y.Z`, PR vào `release/vX.Y.Z` (1 commit, như task) | agent | — |
+| **Bump version** (PR đổi `version.properties`) | branch `bump/vX.Y.Z-<versionCode>` từ `release/vX.Y.Z`, chỉ sửa `version.properties` (`versionName` / `versionCode` sửa tay); PR vào `release/vX.Y.Z`. Lệch tên branch thì build qa fail | agent hoặc user | qa |
+| **Build tay** | Actions → CD → *Run workflow*, chọn branch `release/vX.Y.Z`, `env = qa` | user | qa |
+| **Phát prod** | `git tag vX.Y.Z <commit trên release/vX.Y.Z> && git push origin vX.Y.Z` | user | prod |
+| **Đưa fix về `main`** (lúc nào cũng được, nên làm sớm để ít conflict) | branch `merge/release-vX.Y.Z-<ngày>` tạo từ `release/vX.Y.Z` rồi `git merge origin/main` (giải conflict ở đây); PR vào `main` | agent hoặc user | — |
 
+- **`versionName` / `versionCode` do user sửa tay** (commit cắt release và PR bump). CD không kiểm tra `versionCode`; user tự chịu trách nhiệm tăng nó (store không nhận `versionCode` không tăng).
+- **Chưa kiểm chứng (user thử ở lần release đầu):** ruleset `protect-main` áp dụng cho `release/**` và bắt buộc PR. Chưa biết GitHub có chấp nhận push **tạo** branch được bảo vệ mà chứa commit không có trên `main` hay không. Nếu bị từ chối, phương án dự phòng: tạo branch từ `main` không kèm commit (GitHub UI hoặc `git push origin main:refs/heads/release/vX.Y.Z`), sửa version trong PR đầu tiên (chấp nhận một lần build qa thừa), hoặc chỉ dùng *Run workflow*.
 - **Version chỉ đổi trên `release/*`:**
   - Không bump version trên `main`. `main` nhận version mới qua lần merge release về, và release sau cắt từ `main` thì bump tiếp.
   - Hai branch không cùng sửa `version.properties` nên khi merge về hầu như không conflict ở file này.
-- **Không mở PR thẳng `release/vX.Y` → `main`, phải đi qua branch `merge/...`.**
+- **Không mở PR thẳng `release/vX.Y.Z` → `main`, phải đi qua branch `merge/...`.**
   - Ruleset bắt PR phải cập nhật theo base (strict). Sau khi cắt release, `main` thường đã có commit mới, nên PR thẳng sẽ báo *out-of-date*.
-  - Muốn hết báo thì phải merge `main` vào `release/vX.Y`: bằng nút *Update branch*, hoặc giải conflict trên web. Làm vậy là đẩy code chưa test vào release, và ruleset cũng cấm push thẳng vào `release/**`, nên bị kẹt.
+  - Muốn hết báo thì phải merge `main` vào `release/vX.Y.Z`: bằng nút *Update branch*, hoặc giải conflict trên web. Làm vậy là đẩy code chưa test vào release, và ruleset cũng cấm push thẳng vào `release/**`, nên bị kẹt.
   - Branch `merge/...` nhận `main` thay cho release: release giữ nguyên, conflict được giải ở đó.
   - Chỉ khi `main` chưa có commit mới kể từ lần đồng bộ trước thì PR thẳng mới merge được; trường hợp này hiếm nên không dùng.
 - **PR merge về `main` chứa nhiều commit**, gồm các fix và bump. Đây là ngoại lệ duy nhất của luật "mỗi PR một commit" (CLAUDE.md). Commit merge vẫn tạo một bong bóng trên `main`.

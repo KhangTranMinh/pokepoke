@@ -1,0 +1,272 @@
+name: CD
+
+# Phát APK qaRelease / prodRelease cho tester qua Firebase App Distribution. Xem docs/design/build.md §12.
+# Không chạy trên pull_request (secret không lộ cho code chưa review). CD không bị CI_SKIP (chỉ có trong ci.yml) ảnh hưởng.
+#
+# Cần có (build.md §12.3, §12.4):
+#  - GitHub Environment `qa`:   secret FIREBASE_SERVICE_ACCOUNT (JSON key service account `github-cd`, project pokepoke2026);
+#                               chỉ cho branch `release/*`.
+#  - GitHub Environment `prod`: secret FIREBASE_SERVICE_ACCOUNT (project pokepoke2026-prod), RELEASE_KEYSTORE_BASE64,
+#                               RELEASE_PROPERTIES; bật Required reviewers; chỉ cho tag `v*`.
+#  - Secret repo ENV_SECRETS_TOML (tuỳ chọn, build.md §4b), dùng chung.
+# FIREBASE_APP_ID / FIREBASE_GROUPS không bí mật nên commit ngay trong `env:` của từng job (build.md §12.3).
+
+on:
+  push:
+    branches: ['release/**']
+    paths: ['version.properties'] # chỉ lọc push branch; push tag luôn chạy
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Môi trường phát hành (qa: chọn branch release/*; prod: chọn tag v*)'
+        type: choice
+        options: [qa, prod]
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  # qa: push lên release/** có đổi version.properties (PR bump version), hoặc chạy tay với env = qa.
+  # Push TẠO branch (event.created) không build, dù có sửa version.properties (build.md §12.2, §12.5).
+  distribute-qa:
+    if: >-
+      (github.event_name == 'push' && github.event.created == false && startsWith(github.ref, 'refs/heads/release/')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.env == 'qa')
+    name: distribute-qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: qa
+    concurrency:
+      group: cd-qa-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      FIREBASE_APP_ID: 1:477109968891:android:a2888a4fc232aa4c26355e # com.khangtm.pokepoke.qa @ pokepoke2026
+      FIREBASE_GROUPS: qa
+      APK: app/build/outputs/apk/qa/release/app-qa-release.apk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # cần cho ghi chú phát hành
+
+      # Branch phải đúng release/v<version.properties> (build.md §12.2): mỗi version một branch.
+      - name: Check branch
+        run: |
+          set -euo pipefail
+          prop() { grep "^$1=" version.properties | cut -d= -f2- | tr -d '[:space:]'; }
+          version="$(prop versionMajor).$(prop versionMinor).$(prop versionPatch)"
+          if [ "$GITHUB_REF_NAME" != "release/v$version" ]; then
+            echo "::error::branch $GITHUB_REF_NAME nhưng version.properties là $version (cần branch release/v$version)"
+            exit 1
+          fi
+          echo "Branch $GITHUB_REF_NAME khớp version.properties."
+
+      - name: Write env secrets
+        env:
+          ENV_SECRETS_TOML: ${{ secrets.ENV_SECRETS_TOML }}
+        run: |
+          if [ -n "$ENV_SECRETS_TOML" ]; then
+            printf '%s' "$ENV_SECRETS_TOML" > configs/env/secrets.toml
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      # Dòng đầu: <versionName> (<versionCode>) · <7 ký tự SHA>; sau đó là commit kể từ lần đổi version.properties trước (tối đa 30).
+      - name: Release notes
+        run: |
+          set -euo pipefail
+          prop() { grep "^$1=" version.properties | cut -d= -f2- | tr -d '[:space:]'; }
+          version_name="$(prop versionMajor).$(prop versionMinor).$(prop versionPatch)"
+          version_code="$(prop versionCode)"
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          # Dòng thứ hai là lần đổi version.properties trước đó (mốc); chưa có thì lấy 30 commit gần nhất.
+          base="$(git log -n 2 --format=%H -- version.properties | sed -n 2p)"
+          if [ -n "$base" ]; then range="$base..HEAD"; else range="HEAD"; fi
+          {
+            echo "$version_name ($version_code) · $short_sha"
+            echo
+            git log --no-merges -n 30 --pretty='- %s' "$range"
+          } > "$RUNNER_TEMP/notes.txt"
+          cat "$RUNNER_TEMP/notes.txt"
+
+      - name: Write Firebase service account
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Thiếu secret FIREBASE_SERVICE_ACCOUNT trong Environment qa (build.md §12.3)"
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Build qaRelease
+        run: ./gradlew :app:assembleQaRelease --stacktrace
+
+      - name: Check APK exists
+        run: |
+          if [ ! -f "$APK" ]; then
+            echo "::error::Không thấy APK tại $APK"
+            exit 1
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-qa-release
+          path: app/build/outputs/apk/qa/release/app-qa-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Distribute to Firebase App Distribution
+        run: |
+          npx --yes firebase-tools@15.37.0 appdistribution:distribute "$APK" \
+            --app "$FIREBASE_APP_ID" --groups "$FIREBASE_GROUPS" --release-notes-file "$RUNNER_TEMP/notes.txt"
+
+      - name: Remove secret files
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json" configs/env/secrets.toml
+
+  # prod: push tag v*, hoặc chạy tay với env = prod (chọn tag ở "Use workflow from"). Environment `prod` cần user duyệt.
+  distribute-prod:
+    if: >-
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.env == 'prod')
+    name: distribute-prod
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: prod
+    concurrency:
+      group: cd-prod-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      FIREBASE_APP_ID: 1:702504399810:android:b4dada09372e4efd8d1c5b # com.khangtm.pokepoke @ pokepoke2026-prod
+      FIREBASE_GROUPS: prod
+      APK: app/build/outputs/apk/prod/release/app-prod-release.apk
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # cần cho ghi chú phát hành và kiểm tra tag
+
+      # Sai thì fail trước khi build (build.md §12.2): tag phải khớp version.properties và commit phải nằm trên đúng branch release/<tag>.
+      - name: Check tag
+        run: |
+          set -euo pipefail
+          case "$GITHUB_REF" in
+            refs/tags/v*) ;;
+            *) echo "::error::Phát prod phải chạy từ tag v* (đang chạy từ $GITHUB_REF)"; exit 1 ;;
+          esac
+          prop() { grep "^$1=" version.properties | cut -d= -f2- | tr -d '[:space:]'; }
+          expected="v$(prop versionMajor).$(prop versionMinor).$(prop versionPatch)"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME không khớp version.properties (cần $expected)"
+            exit 1
+          fi
+          if ! git branch -r --contains "$(git rev-parse HEAD)" | grep -qx "[[:space:]]*origin/release/$GITHUB_REF_NAME"; then
+            echo "::error::Commit của tag $GITHUB_REF_NAME không nằm trên branch release/$GITHUB_REF_NAME (không phát prod từ main hay từ branch version khác)"
+            exit 1
+          fi
+          echo "Tag $GITHUB_REF_NAME hợp lệ."
+
+      - name: Write env secrets
+        env:
+          ENV_SECRETS_TOML: ${{ secrets.ENV_SECRETS_TOML }}
+        run: |
+          if [ -n "$ENV_SECRETS_TOML" ]; then
+            printf '%s' "$ENV_SECRETS_TOML" > configs/env/secrets.toml
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      # Dòng đầu: <versionName> (<versionCode>) · <7 ký tự SHA>; sau đó là commit từ tag v* trước tới tag hiện tại
+      # (chưa có tag trước thì 30 commit gần nhất).
+      - name: Release notes
+        run: |
+          set -euo pipefail
+          prop() { grep "^$1=" version.properties | cut -d= -f2- | tr -d '[:space:]'; }
+          version_name="$(prop versionMajor).$(prop versionMinor).$(prop versionPatch)"
+          version_code="$(prop versionCode)"
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          prev="$(git describe --tags --abbrev=0 --match 'v*' "$GITHUB_REF_NAME^" 2>/dev/null || true)"
+          if [ -n "$prev" ]; then
+            range="$prev..$GITHUB_REF_NAME"
+            limit=()
+          else
+            range="$GITHUB_REF_NAME"
+            limit=(-n 30)
+          fi
+          {
+            echo "$version_name ($version_code) · $short_sha"
+            echo
+            git log --no-merges "${limit[@]}" --pretty='- %s' "$range"
+          } > "$RUNNER_TEMP/notes.txt"
+          cat "$RUNNER_TEMP/notes.txt"
+
+      - name: Write Firebase service account and release signing
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_PROPERTIES: ${{ secrets.RELEASE_PROPERTIES }}
+        run: |
+          set -euo pipefail
+          for name in FIREBASE_SERVICE_ACCOUNT RELEASE_KEYSTORE_BASE64 RELEASE_PROPERTIES; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Thiếu secret $name trong Environment prod (build.md §12.3)"
+              exit 1
+            fi
+          done
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-sa.json"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > configs/signing/release.keystore
+          printf '%s' "$RELEASE_PROPERTIES" > configs/signing/release.properties
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json" >> "$GITHUB_ENV"
+
+      - name: Build prodRelease
+        run: ./gradlew :app:assembleProdRelease --stacktrace
+
+      - name: Check APK exists
+        run: |
+          if [ ! -f "$APK" ]; then
+            echo "::error::Không thấy APK tại $APK"
+            exit 1
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-prod-release
+          path: app/build/outputs/apk/prod/release/app-prod-release.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Distribute to Firebase App Distribution
+        run: |
+          npx --yes firebase-tools@15.37.0 appdistribution:distribute "$APK" \
+            --app "$FIREBASE_APP_ID" --groups "$FIREBASE_GROUPS" --release-notes-file "$RUNNER_TEMP/notes.txt"
+
+      - name: Remove secret files
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/firebase-sa.json" configs/env/secrets.toml \
+            configs/signing/release.keystore configs/signing/release.properties

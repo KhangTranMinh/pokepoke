@@ -142,7 +142,7 @@
   - Tạm cho một ViewModel kế thừa `AndroidViewModel`: fail. Hoàn lại.
   - Sửa một ViewModel ngay sau lần chạy xanh rồi chạy lại `:konsist:test`: test chạy lại, không "up-to-date".
   - Tạm thêm `implementation(projects.core.commonKotlin)` vào `:konsist`: `verifyModuleDependencies` fail. Hoàn lại.
-- [ ] **T15f — CD: Firebase App Distribution (task chèn thêm).** Đọc build.md §4, §4a, §4b, §10, §12; CLAUDE.md (secret, signing). Tạo `.github/workflows/cd.yml` đúng build.md §12.2. `ci.yml`: thêm `release/**` vào `on.pull_request.branches` và `on.push.branches` (§12.5). Không sửa `build-logic`.
+- [x] **T15f — CD: Firebase App Distribution (task chèn thêm).** Đọc build.md §4, §4a, §4b, §10, §12; CLAUDE.md (secret, signing). Tạo `.github/workflows/cd.yml` đúng build.md §12.2. `ci.yml`: thêm `release/**` vào `on.pull_request.branches` và `on.push.branches` (§12.5). Không sửa `build-logic`.
   - 2 job `distribute-qa` / `distribute-prod`, dùng GitHub Environment `qa` / `prod`; trigger (qa: push `release/**` + `paths: version.properties`, hoặc `workflow_dispatch`; prod: tag `v*`, hoặc `workflow_dispatch`), runner, `concurrency`, `permissions` đúng §12.2.
   - Mọi secret ghi ra file bằng `printf '%s'` qua `env:`, không echo. File secret (`firebase-sa.json`, `release.*`) nằm ở `$RUNNER_TEMP` hoặc `configs/signing/` và được xoá ở bước `if: always()`.
   - Prod: kiểm tra tag khớp `version.properties` và commit nằm trên `release/*` trước khi build. Ghi chú phát hành theo §12.2. Firebase CLI pin `firebase-tools@15.37.0` (`npx --yes`). Upload APK làm artifact (14 ngày).
