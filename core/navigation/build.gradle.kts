@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.hilt)
 }
 
 android {
@@ -9,15 +9,15 @@ android {
 }
 
 dependencies {
-    api(platform(libs.androidx.compose.bom))
-    api(libs.androidx.navigation3.runtime)
-    api(libs.androidx.compose.ui.graphics)
-    api(libs.androidx.compose.material.icons.core)
-    api(libs.kotlinx.coroutines.core)
+    api(platform(pokepoke.androidx.compose.bom))
+    api(pokepoke.androidx.navigation3.runtime)
+    api(pokepoke.androidx.compose.ui.graphics)
+    api(pokepoke.androidx.compose.material.icons.core)
+    api(pokepoke.kotlinx.coroutines.core)
     implementation(projects.core.commonKotlin)
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(pokepoke.kotlinx.coroutines.android)
 
     // NavigatorContract (testFixtures) checks FakeNavigator and NavigatorImpl against the same rules.
-    testFixturesApi(libs.junit)
-    testFixturesApi(libs.kotlinx.coroutines.test)
+    testFixturesApi(pokepoke.junit)
+    testFixturesApi(pokepoke.kotlinx.coroutines.test)
 }

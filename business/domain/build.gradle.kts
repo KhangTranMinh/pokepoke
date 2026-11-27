@@ -1,15 +1,15 @@
 plugins {
-    alias(libs.plugins.pokepoke.jvm.library)
-    alias(libs.plugins.ksp)
+    alias(pokepoke.plugins.pokepoke.jvm.library)
+    alias(pokepoke.plugins.ksp)
 }
 
 dependencies {
     api(projects.core.commonKotlin)
-    api(libs.kotlinx.coroutines.core)
+    api(pokepoke.kotlinx.coroutines.core)
     // Hilt for a pure Kotlin/JVM module: @Inject + @Module @InstallIn (build.md §3).
-    implementation(libs.hilt.core)
-    ksp(libs.hilt.compiler)
+    implementation(pokepoke.hilt.core)
+    ksp(pokepoke.hilt.compiler)
 
-    testFixturesApi(libs.junit)
-    testFixturesApi(libs.kotlinx.coroutines.test)
+    testFixturesApi(pokepoke.junit)
+    testFixturesApi(pokepoke.kotlinx.coroutines.test)
 }

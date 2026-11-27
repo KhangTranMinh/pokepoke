@@ -18,19 +18,30 @@ kotlin {
 }
 
 dependencies {
-    compileOnly(libs.android.gradlePlugin)
-    compileOnly(libs.kotlin.gradlePlugin)
-    compileOnly(libs.kotlin.compose.gradlePlugin)
-    compileOnly(libs.ksp.gradlePlugin)
-    compileOnly(libs.hilt.gradlePlugin)
-    compileOnly(libs.room.gradlePlugin)
-    compileOnly(libs.kover.gradlePlugin)
-    compileOnly(libs.roborazzi.gradlePlugin)
+    compileOnly(pokepoke.android.gradlePlugin)
+    compileOnly(pokepoke.kotlin.gradlePlugin)
+    compileOnly(pokepoke.kotlin.compose.gradlePlugin)
+    compileOnly(pokepoke.ksp.gradlePlugin)
+    compileOnly(pokepoke.hilt.gradlePlugin)
+    compileOnly(pokepoke.room.gradlePlugin)
+    compileOnly(pokepoke.kover.gradlePlugin)
+    compileOnly(pokepoke.roborazzi.gradlePlugin)
 
     // Chạy lúc build (đọc configs/env/*.toml), nên là implementation chứ không phải compileOnly như các Gradle plugin.
-    implementation(libs.tomlj)
+    implementation(pokepoke.tomlj)
 
-    testImplementation(libs.junit)
+    testImplementation(pokepoke.junit)
+}
+
+// Test đọc file thật của repo (catalog, structure.toml, settings): khai báo là input để sửa file thì test chạy lại.
+tasks.test {
+    val repoRoot = layout.projectDirectory.dir("../..")
+    inputs.files(
+        repoRoot.file("gradle/pokepoke.versions.toml"),
+        repoRoot.file("gradle/libs.versions.toml"),
+        repoRoot.file("configs/build/structure.toml"),
+        repoRoot.file("settings.gradle.kts"),
+    ).withPropertyName("repoFiles").withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
 gradlePlugin {

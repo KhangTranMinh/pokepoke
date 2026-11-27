@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.hilt)
-    alias(libs.plugins.pokepoke.kotlin.serialization)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.kotlin.serialization)
 }
 
 android {
@@ -15,6 +15,6 @@ dependencies {
     api(libs.retrofit)
     api(libs.okhttp)
     implementation(libs.retrofit.converter.kotlinx.serialization)
-    testFixturesImplementation(libs.kotlinx.serialization.json)
+    testFixturesImplementation(pokepoke.kotlinx.serialization.json)
     testImplementation(libs.okhttp.mockwebserver)
 }

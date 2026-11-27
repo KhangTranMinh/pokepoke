@@ -1,0 +1,131 @@
+# Version catalog `pokepoke`: mọi thứ build-logic đọc hoặc tự thêm vào module (SDK / JVM, Gradle plugin, thư viện mà
+# convention plugin addDep, alias convention plugin pokepoke-*). Module của app cũng dùng được: `pokepoke.junit`,
+# `pokepoke.plugins.pokepoke.android.library`...
+# Thư viện riêng của app ở gradle/libs.versions.toml; mỗi artifact chỉ nằm ở đúng một trong hai file,
+# `version.ref` chỉ trỏ [versions] cùng file.
+
+[versions]
+# SDK / JVM
+compileSdk = "37"
+compileSdkMinor = "1"
+minSdk = "30"
+targetSdk = "37"
+jvm = "21"
+
+# Build
+agp = "9.5.2"
+kotlin = "2.4.21"
+ksp = "2.3.14"
+hilt = "2.60.1"
+room = "2.8.5"
+kover = "0.9.11"
+roborazzi = "1.79.0"
+tomlj = "2.2.0"
+
+# AndroidX
+lifecycle = "2.11.1"
+composeBom = "2026.11.01"
+materialIconsCore = "1.7.8"
+material3Adaptive = "1.3.0"
+navigation3 = "1.2.2"
+hiltLifecycleViewmodelCompose = "1.4.0"
+
+# Kotlin / network / image / security
+coroutines = "1.11.0"
+serialization = "1.13.0"
+
+# Test
+junit = "4.13.2"
+androidxTestJunit = "1.3.0"
+turbine = "1.2.1"
+mockk = "1.14.12"
+robolectric = "4.18.1"
+
+[libraries]
+# AndroidX
+androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+androidx-lifecycle-viewmodel-navigation3 = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-navigation3", version.ref = "lifecycle" }
+
+# Compose (versions from BOM unless noted)
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIconsCore" }
+androidx-compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive", version.ref = "material3Adaptive" }
+androidx-compose-material3-adaptive-layout = { group = "androidx.compose.material3.adaptive", name = "adaptive-layout", version.ref = "material3Adaptive" }
+androidx-compose-material3-adaptive-navigation3 = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation3", version.ref = "material3Adaptive" }
+
+# Navigation 3
+androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigation3-runtime", version.ref = "navigation3" }
+androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
+
+# Room
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+
+# Hilt
+hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
+hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
+hilt-core = { group = "com.google.dagger", name = "hilt-core", version.ref = "hilt" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hilt" }
+androidx-hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", name = "hilt-lifecycle-viewmodel-compose", version.ref = "hiltLifecycleViewmodelCompose" }
+
+# Kotlin / network / image / security
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+
+# Gradle plugins used by build-logic (compileOnly)
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-compose-gradlePlugin = { group = "org.jetbrains.kotlin", name = "compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+hilt-gradlePlugin = { group = "com.google.dagger", name = "hilt-android-gradle-plugin", version.ref = "hilt" }
+room-gradlePlugin = { group = "androidx.room", name = "room-gradle-plugin", version.ref = "room" }
+kover-gradlePlugin = { group = "org.jetbrains.kotlinx", name = "kover-gradle-plugin", version.ref = "kover" }
+tomlj = { group = "org.tomlj", name = "tomlj", version.ref = "tomlj" }
+roborazzi-gradlePlugin = { group = "io.github.takahirom.roborazzi", name = "io.github.takahirom.roborazzi.gradle.plugin", version.ref = "roborazzi" }
+
+# Test
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+room = { id = "androidx.room", version.ref = "room" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
+
+# Convention plugins (build-logic)
+pokepoke-android-application = { id = "pokepoke.android.application", version = "unspecified" }
+pokepoke-android-library = { id = "pokepoke.android.library", version = "unspecified" }
+pokepoke-android-compose = { id = "pokepoke.android.compose", version = "unspecified" }
+pokepoke-android-feature-api = { id = "pokepoke.android.feature.api", version = "unspecified" }
+pokepoke-android-feature-impl = { id = "pokepoke.android.feature.impl", version = "unspecified" }
+pokepoke-hilt = { id = "pokepoke.hilt", version = "unspecified" }
+pokepoke-room = { id = "pokepoke.room", version = "unspecified" }
+pokepoke-kotlin-serialization = { id = "pokepoke.kotlin.serialization", version = "unspecified" }
+pokepoke-jvm-library = { id = "pokepoke.jvm.library", version = "unspecified" }
+pokepoke-kover = { id = "pokepoke.kover", version = "unspecified" }

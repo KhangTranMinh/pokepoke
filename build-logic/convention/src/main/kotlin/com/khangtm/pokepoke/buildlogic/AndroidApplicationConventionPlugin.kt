@@ -39,7 +39,7 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
         extensions.configure<ApplicationExtension> {
             configureAndroidCommon(this)
             defaultConfig {
-                targetSdk = libs.version("targetSdk").toInt()
+                targetSdk = pokepokeCatalog.version("targetSdk").toInt()
                 versionCode = version.code
                 versionName = version.name
             }

@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.application)
-    alias(libs.plugins.pokepoke.android.compose)
-    alias(libs.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.android.application)
+    alias(pokepoke.plugins.pokepoke.android.compose)
+    alias(pokepoke.plugins.pokepoke.hilt)
 }
 
 android {
@@ -50,18 +50,18 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.compose.material3.adaptive.navigation3)
+    implementation(pokepoke.androidx.lifecycle.runtime.compose)
+    implementation(pokepoke.androidx.lifecycle.viewmodel.navigation3)
+    implementation(pokepoke.androidx.navigation3.runtime)
+    implementation(pokepoke.androidx.navigation3.ui)
+    implementation(pokepoke.androidx.compose.material3.adaptive.navigation3)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
-    testImplementation(libs.junit)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.test.junit)
+    testImplementation(pokepoke.junit)
+    testImplementation(pokepoke.robolectric)
+    testImplementation(pokepoke.androidx.test.junit)
     testImplementation(projects.core.testing)
     testImplementation(testFixtures(projects.core.navigation))
-    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(pokepoke.androidx.test.junit)
     androidTestImplementation(libs.espresso.core)
 }

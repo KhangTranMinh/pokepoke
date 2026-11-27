@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.hilt)
 }
 
 android {

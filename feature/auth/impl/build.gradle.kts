@@ -1,5 +1,5 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.feature.impl)
+    alias(pokepoke.plugins.pokepoke.android.feature.impl)
 }
 
 android {

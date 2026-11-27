@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinBaseExtension
 
 /** SDK, JVM toolchain and Java compatibility shared by application and library modules. */
 internal fun Project.configureAndroidCommon(android: CommonExtension) {
-    val catalog = libs
+    val catalog = pokepokeCatalog
     val jvm = catalog.version("jvm").toInt()
     android.compileSdk {
         version = release(catalog.version("compileSdk").toInt()) {
@@ -24,6 +24,6 @@ internal fun Project.configureAndroidCommon(android: CommonExtension) {
 }
 
 internal fun Project.configureJvmToolchain() {
-    val jvm = libs.version("jvm").toInt()
+    val jvm = pokepokeCatalog.version("jvm").toInt()
     extensions.configure<KotlinBaseExtension> { jvmToolchain(jvm) }
 }

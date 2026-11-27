@@ -57,6 +57,8 @@ robolectric = "4.18.1"
 
 ### 1.1. Thư viện (artifact)
 
+Cột "Alias gợi ý" là alias trong catalog `pokepoke` hoặc `libs` — phân chia theo §1.4 (module dùng `pokepoke.<alias>` hoặc `libs.<alias>`; tên alias không đổi so với trước T15c).
+
 | Alias gợi ý | Artifact |
 |---|---|
 | androidx-core-ktx | `androidx.core:core-ktx` |
@@ -95,6 +97,8 @@ robolectric = "4.18.1"
 
 ### 1.2. Plugin
 
+Tất cả nằm trong `[plugins]` của catalog `pokepoke` (module dùng `pokepoke.plugins.<alias>`, vd. `pokepoke.plugins.kotlin.compose`, `pokepoke.plugins.pokepoke.hilt`).
+
 | Alias | Id | Version |
 |---|---|---|
 | android-application | `com.android.application` | agp |
@@ -125,10 +129,10 @@ Bảng version ở §1 / §1.1 / §1.2 vẫn là nguồn chuẩn cho **giá tr�
 
 | File | Catalog | Chứa | Ai dùng |
 |---|---|---|---|
-| `gradle/pokepoke.versions.toml` | `pokepoke` | Mọi thứ `build-logic` đọc hoặc tự thêm: version SDK / JVM (`compileSdk`, `compileSdkMinor`, `minSdk`, `targetSdk`, `jvm`); artifact Gradle plugin (AGP, KGP, compose compiler, KSP, Hilt, Room, Kover, Roborazzi) + `[plugins]` tương ứng + alias convention plugin `pokepoke-*`; thư viện plugin tự thêm (Compose BOM + ui / foundation / material3 / icons / tooling / test, hilt-android / compiler / testing, room-*, kotlinx-serialization-json, kotlinx-coroutines-core / test, lifecycle-runtime / viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive*, junit, mockk, turbine, robolectric, androidx-test-junit, roborazzi*); `tomlj` | `build-logic` (`Catalog.kt`, `build-logic/settings.gradle.kts`); module dùng trực tiếp khi cần (`pokepoke.junit`, `pokepoke.plugins.pokepoke.android.library`...) |
-| `gradle/libs.versions.toml` | `libs` | Thư viện riêng của app mà module tự khai báo: retrofit, okhttp, mockwebserver, coil, tink, datastore, startup, activity-compose, core-ktx, splashscreen, appcompat, coroutines-android, navigation3-ui, espresso... | Module của project |
+| `gradle/pokepoke.versions.toml` | `pokepoke` | Mọi thứ `build-logic` đọc hoặc tự thêm: version SDK / JVM (`compileSdk`, `compileSdkMinor`, `minSdk`, `targetSdk`, `jvm`); artifact Gradle plugin (AGP, KGP, compose compiler, KSP, Hilt, Room, Kover, Roborazzi) + `[plugins]` tương ứng + alias convention plugin `pokepoke-*`; thư viện plugin tự thêm (Compose BOM + ui / foundation / material3 / icons / tooling / test, hilt-android / compiler / testing, room-*, kotlinx-serialization-json, kotlinx-coroutines-core / test, lifecycle-runtime / viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive*, junit, mockk, turbine, robolectric, androidx-test-junit, roborazzi*); `tomlj`; cùng họ version với các thư viện trên: `hilt-core`, `kotlinx-coroutines-android`, `androidx-navigation3-ui`, `androidx-lifecycle-viewmodel-navigation3` (để một version chỉ khai báo một lần) | `build-logic` (`Catalog.kt`, `build-logic/settings.gradle.kts`); module dùng trực tiếp khi cần (`pokepoke.junit`, `pokepoke.plugins.pokepoke.android.library`...) |
+| `gradle/libs.versions.toml` | `libs` | Thư viện riêng của app mà module tự khai báo: retrofit (+ converter), okhttp, mockwebserver, coil, tink, datastore, startup, activity-compose, core-ktx, splashscreen, appcompat, javax-inject, material3-navigation-suite, espresso | Module của project |
 
-- **Mỗi artifact (`group:name`) nằm ở đúng một catalog** (kể cả cùng version): trùng → Gradle âm thầm chọn bản cao hơn, khó phát hiện. Test trong `build-logic` đọc cả hai file (tomlj), fail nếu trùng `group:name` (library) hoặc trùng plugin id. Version tham chiếu (`version.ref`) chỉ trỏ tới `[versions]` **cùng file**.
+- **Mỗi artifact (`group:name`) nằm ở đúng một catalog** (kể cả cùng version): trùng → Gradle âm thầm chọn bản cao hơn, khó phát hiện. Test `CatalogConsistencyTest` trong `build-logic` đọc cả hai file (tomlj), fail nếu trùng `group:name` (library) hoặc trùng plugin id, nếu `version.ref` trỏ ngoài `[versions]` của chính file, hoặc nếu alias / version / plugin id mà convention plugin dùng không có trong `pokepoke.versions.toml`. Version tham chiếu (`version.ref`) chỉ trỏ tới `[versions]` **cùng file**.
 - Root `settings.gradle.kts`: `dependencyResolutionManagement { versionCatalogs { create("pokepoke") { from(files("gradle/pokepoke.versions.toml")) } } }` (`libs` vẫn được Gradle tự tạo từ `gradle/libs.versions.toml`).
 - `build-logic/settings.gradle.kts`: chỉ `create("pokepoke") { from(files("../gradle/pokepoke.versions.toml")) }` — `build-logic` **không** đọc `libs`.
 - `Catalog.kt`: `named("pokepoke")`; mọi `addDep` / `version(...)` trong plugin chỉ tra catalog này.
@@ -180,58 +184,7 @@ Ghi chú:
 
 Convention plugin chỉ chứa **logic**. Mọi **đường dẫn module** mà plugin tự thêm làm dependency, luật kiến trúc (mục 5), danh sách module có ngưỡng Kover (mục 6) và module debugtool đều đọc từ `configs/build/structure.toml` (được commit). Mục đích: dùng lại `build-logic` cho project khác (cùng flavor dev / qa / prod, cùng plugin id `pokepoke.*`) bằng cách **chỉ sửa file này**. Thư viện ngoài (artifact của catalog như junit, mockk, lifecycle...) vẫn nằm trong plugin, vì đó là quy ước kỹ thuật chứ không phải cấu trúc project.
 
-```toml
-# configs/build/structure.toml - docs/design/build.md §3a
-
-[library]                                    # pokepoke.android.library
-testImplementation = [":core:testing"]
-excludeAutoDependencies = [":core:testing", ":translation"]   # không nhận dependency tự thêm ở trên
-
-[feature.api]                                # pokepoke.android.feature.api
-api = [":core:common-kotlin", ":core:navigation"]
-
-[feature.impl]                               # pokepoke.android.feature.impl
-implementation = [":core:designsystem", ":core:ui", ":core:common-kotlin", ":core:navigation", ":translation"]
-testFixtures = [":core:navigation"]          # testImplementation(testFixtures(project(x)))
-
-[app]
-debugTool = ":debugtool"                     # verifyReleaseHasNoDebugTool (mục 5)
-
-[kover]                                      # mục 6
-minLineCoverage = 70
-modules = [
-  ":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity",
-  ":core:navigation", ":core:deeplink", ":core:*:impl",
-  ":business:domain", ":business:data", ":feature:*:impl", ":debugtool",
-]
-
-# Luật kiến trúc (mục 5): module khớp `from` (trừ `except`) không được phụ thuộc module khớp `to`.
-[[rules]]
-from = ["**"]
-except = [":app"]
-to = [":**:impl", ":debugtool", ":business:data"]
-reason = "only :app may depend on :impl / :debugtool / :business:data (Hilt gom binding ở :app)"
-
-[[rules]]
-from = [":core:**"]
-to = [":business:**", ":feature:**"]
-reason = ":core must not depend on :business or :feature"
-
-[[rules]]
-from = [":business:**"]
-to = [":feature:**"]
-reason = ":business must not depend on :feature"
-
-[[rules]]
-from = [":debugtool"]
-to = [":business:**", ":feature:**"]
-reason = ":debugtool must not depend on :business or :feature"
-
-[[rules]]
-from = [":translation"]
-to = ["**"]
-reason = ":translation chỉ chứa resource, không phụ thuộc module nào"
-```
+Nội dung hiện tại: xem thẳng [`configs/build/structure.toml`](../../configs/build/structure.toml) — mỗi section / luật có comment giải thích (không chép lại ở đây để khỏi lệch). Các section: `[library]` (`testImplementation`, `excludeAutoDependencies`), `[feature.api]` (`api`), `[feature.impl]` (`implementation`, `testFixtures`), `[app]` (`debugTool`), `[kover]` (`minLineCoverage`, `modules`), `[[rules]]` (`from`, `except`, `to`, `reason`).
 
 **Pattern** (dùng cho `from`, `except`, `to`, `kover.modules`), so khớp theo từng đoạn của project path:
 - `*` = đúng **một** đoạn (`:core:*:impl` khớp `:core:storage:impl`, không khớp `:core:a:b:impl`).

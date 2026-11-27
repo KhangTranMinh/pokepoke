@@ -22,6 +22,12 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
     }
+    versionCatalogs {
+        // Catalog của build-logic (SDK, Gradle plugin, thư viện convention plugin tự thêm); `libs` Gradle tự tạo từ gradle/libs.versions.toml.
+        create("pokepoke") {
+            from(files("gradle/pokepoke.versions.toml"))
+        }
+    }
 }
 
 rootProject.name = "PokePoke"

@@ -16,7 +16,7 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
 
         extensions.getByType<CommonExtension>().buildFeatures.compose = true
 
-        val bom = libs.findLibrary("androidx-compose-bom").get()
+        val bom = pokepokeCatalog.findLibrary("androidx-compose-bom").get()
         dependencies.add("implementation", dependencies.platform(bom))
         dependencies.add("testImplementation", dependencies.platform(bom))
         dependencies.add("androidTestImplementation", dependencies.platform(bom))

@@ -1,49 +1,160 @@
-# configs/build/structure.toml - docs/design/build.md §3a
+# =====================================================================================================
+# Cấu trúc module của project — docs/design/build.md §3a
+#
+# Convention plugin trong build-logic chỉ chứa logic; mọi đường dẫn module mà plugin cần đều khai báo ở đây.
+# Thêm module / đổi luật kiến trúc → chỉ sửa file này, không sửa build-logic.
+#
+# File được đọc một lần lúc cấu hình (Gradle pha 2), sửa file là configuration cache tự làm mới.
+# Sai cú pháp, key lạ, đường dẫn không có trong settings.gradle.kts → build fail với message rõ ràng.
+#
+# Pattern (dùng được ở excludeAutoDependencies, kover.modules, rules.from / except / to):
+#   *    = đúng một đoạn của project path        ":core:*:impl" khớp ":core:storage:impl"
+#   **   = một hoặc nhiều đoạn                    ":core:**" khớp ":core:ui" và ":core:storage:impl"
+#   "**" đứng một mình = mọi module
+# Đường dẫn dùng làm dependency (testImplementation, api, implementation, testFixtures, debugTool)
+# phải viết chính xác, không có ký tự đại diện.
+# =====================================================================================================
 
-[library]                                    # pokepoke.android.library
-testImplementation = [":core:testing"]
-excludeAutoDependencies = [":core:testing", ":translation"]   # không nhận dependency tự thêm ở trên
 
-[feature.api]                                # pokepoke.android.feature.api
-api = [":core:common-kotlin", ":core:navigation"]
+# -----------------------------------------------------------------------------------------------------
+# Plugin `pokepoke.android.library` (mọi Android library, kể cả feature api / impl)
+# -----------------------------------------------------------------------------------------------------
+[library]
 
-[feature.impl]                               # pokepoke.android.feature.impl
-implementation = [":core:designsystem", ":core:ui", ":core:common-kotlin", ":core:navigation", ":translation"]
-testFixtures = [":core:navigation"]          # testImplementation(testFixtures(project(x)))
-
-[app]
-debugTool = ":debugtool"                     # verifyReleaseHasNoDebugTool (mục 5)
-
-[kover]                                      # mục 6
-minLineCoverage = 70
-modules = [
-  ":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity",
-  ":core:navigation", ":core:deeplink", ":core:*:impl",
-  ":business:domain", ":business:data", ":feature:*:impl", ":debugtool",
+# Module được tự thêm `testImplementation(project(x))` vào mọi Android library.
+# :core:testing là bộ công cụ test dùng chung (fake, rule, dispatcher test...).
+testImplementation = [
+    ":core:testing",
 ]
 
-# Luật kiến trúc (mục 5): module khớp `from` (trừ `except`) không được phụ thuộc module khớp `to`.
+# Module KHÔNG nhận dependency tự thêm ở trên:
+# - :core:testing: chính là bộ công cụ test, không tự phụ thuộc vào mình.
+# - :translation: chỉ chứa resource, không được phụ thuộc module nào (xem luật cuối file).
+excludeAutoDependencies = [
+    ":core:testing",
+    ":translation",
+]
+
+
+# -----------------------------------------------------------------------------------------------------
+# Plugin `pokepoke.android.feature.api` (module `:feature:*:api`)
+# -----------------------------------------------------------------------------------------------------
+[feature.api]
+
+# Tự thêm `api(project(x))`: api của feature lộ NavKey (core:navigation) và AppResult
+# (core:common-kotlin) cho module dùng nó, nên phải là `api` chứ không phải `implementation`.
+api = [
+    ":core:common-kotlin",
+    ":core:navigation",
+]
+
+
+# -----------------------------------------------------------------------------------------------------
+# Plugin `pokepoke.android.feature.impl` (module `:feature:*:impl`)
+# -----------------------------------------------------------------------------------------------------
+[feature.impl]
+
+# Tự thêm `implementation(project(x))`: những gì mọi màn hình cần
+# (design system, UI dùng chung, AppResult, Navigator, string).
+implementation = [
+    ":core:designsystem",
+    ":core:ui",
+    ":core:common-kotlin",
+    ":core:navigation",
+    ":translation",
+]
+
+# Tự thêm `testImplementation(testFixtures(project(x)))`: fake dùng trong test của feature
+# (vd. FakeNavigator của core:navigation).
+testFixtures = [
+    ":core:navigation",
+]
+
+
+# -----------------------------------------------------------------------------------------------------
+# Plugin `pokepoke.android.application` (module `:app`)
+# -----------------------------------------------------------------------------------------------------
+[app]
+
+# Module công cụ debug. Task `verifyReleaseHasNoDebugTool` fail nếu module này nằm trong
+# classpath runtime của flavor prod (prodDebug / prodRelease). Dev / qa được phép có.
+debugTool = ":debugtool"
+
+
+# -----------------------------------------------------------------------------------------------------
+# Kover — ngưỡng coverage (build.md §6)
+# -----------------------------------------------------------------------------------------------------
+[kover]
+
+# Phần trăm line coverage tối thiểu; `koverVerify` fail nếu module bên dưới thấp hơn.
+minLineCoverage = 70
+
+# Module bắt buộc đạt ngưỡng (module chứa logic). Module khác (api, designsystem, ui, app...)
+# vẫn được đo nhưng không có ngưỡng.
+modules = [
+    # core có logic
+    ":core:common-kotlin",
+    ":core:common-android",
+    ":core:network",
+    ":core:connectivity",
+    ":core:navigation",
+    ":core:deeplink",
+    ":core:*:impl",
+    # business
+    ":business:domain",
+    ":business:data",
+    # feature
+    ":feature:*:impl",
+    # công cụ debug
+    ":debugtool",
+]
+
+
+# -----------------------------------------------------------------------------------------------------
+# Luật kiến trúc — task `verifyModuleDependencies` (build.md §5)
+#
+# Mỗi [[rules]]: module khớp `from` (trừ module khớp `except`) KHÔNG được phụ thuộc module khớp `to`.
+# `reason` được in trong message khi vi phạm. Dependency vào chính mình được bỏ qua;
+# testFixtures(project(x)) được tính như phụ thuộc vào x.
+# -----------------------------------------------------------------------------------------------------
+
+# Chỉ :app được ghép các phần cài đặt: :impl, debugtool, business:data.
+# Lý do: Hilt chỉ gom binding từ module mà :app thấy; module khác chỉ được biết interface (api / domain).
 [[rules]]
 from = ["**"]
 except = [":app"]
-to = [":**:impl", ":debugtool", ":business:data"]
+to = [
+    ":**:impl",
+    ":debugtool",
+    ":business:data",
+]
 reason = "only :app may depend on :impl / :debugtool / :business:data (Hilt gom binding ở :app)"
 
+# core là tầng dưới cùng, dùng chung cho mọi project: không biết gì về nghiệp vụ hay feature.
 [[rules]]
 from = [":core:**"]
-to = [":business:**", ":feature:**"]
+to = [
+    ":business:**",
+    ":feature:**",
+]
 reason = ":core must not depend on :business or :feature"
 
+# business (Pokémon, Favourite) độc lập với UI: feature dùng business, không có chiều ngược lại.
 [[rules]]
 from = [":business:**"]
 to = [":feature:**"]
 reason = ":business must not depend on :feature"
 
+# debugtool chỉ xem tầng hạ tầng (network log, storage, deeplink), không đụng nghiệp vụ / màn hình.
 [[rules]]
 from = [":debugtool"]
-to = [":business:**", ":feature:**"]
+to = [
+    ":business:**",
+    ":feature:**",
+]
 reason = ":debugtool must not depend on :business or :feature"
 
+# translation chỉ chứa string resource; mọi module được phụ thuộc vào nó, nó không phụ thuộc ai.
 [[rules]]
 from = [":translation"]
 to = ["**"]

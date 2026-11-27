@@ -1,8 +1,8 @@
 plugins {
-    alias(libs.plugins.pokepoke.jvm.library)
+    alias(pokepoke.plugins.pokepoke.jvm.library)
 }
 
 dependencies {
-    api(libs.kotlinx.coroutines.core)
+    api(pokepoke.kotlinx.coroutines.core)
     api(libs.javax.inject)
 }

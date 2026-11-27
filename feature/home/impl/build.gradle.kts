@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.feature.impl)
-    alias(libs.plugins.pokepoke.kotlin.serialization)
+    alias(pokepoke.plugins.pokepoke.android.feature.impl)
+    alias(pokepoke.plugins.pokepoke.kotlin.serialization)
 }
 
 android {
