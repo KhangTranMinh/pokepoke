@@ -118,6 +118,8 @@ dependencies {
 Module khác: `alias(pokepoke.plugins.pokepoke.android.library)`, `...pokepoke.android.feature.impl`, ... Thư viện mà plugin đã thêm
 sẵn không cần khai báo lại; thư viện khác thì `implementation(libs.xxx)` (catalog của bạn) hoặc `implementation(pokepoke.junit)` (catalog `pokepoke`).
 
+Lưu ý: `:core:*` là phần dùng chung giữa các project (sẽ publish được), nên chỉ dùng catalog `pokepoke` và `coreLibs` (thư viện ngoài của core, `build-logic` không đọc), không dùng `libs.`; thư viện riêng của app mới đặt ở `libs`.
+
 Cần thêm cho `:app`:
 
 - `app/src/main/AndroidManifest.xml` (có `<application>`) và `app/src/main/res/resources.properties` chứa `unqualifiedResLocale=en-US`
@@ -151,8 +153,8 @@ Plugin không hardcode tên module: danh sách module tự thêm, luật kiến 
 của project dùng). Mọi đường dẫn phải là project có trong `settings.gradle.kts` (gõ sai thì build fail ngay); mẫu có ký tự đại diện
 phải khớp ít nhất một project.
 
-Pattern: một đường dẫn cụ thể (`:core:ui`) khớp đúng nó; `*` khớp **đúng một** đoạn (`:feature:*:impl` khớp `:feature:home:impl`);
-`**` khớp **một đoạn trở lên** (`:core:**` khớp `:core:ui`, `:core:storage:api`); riêng `**` đứng một mình khớp mọi module.
+Pattern: một đường dẫn cụ thể (`:core:network`) khớp đúng nó; `*` khớp **đúng một** đoạn (`:feature:*:impl` khớp `:feature:home:impl`);
+`**` khớp **một đoạn trở lên** (`:core:**` khớp `:core:network`, `:core:storage:api`); riêng `**` đứng một mình khớp mọi module.
 
 File tối thiểu cho ví dụ Demo (copy được; mọi section và key đều bắt buộc, trừ `[[rules]]`):
 
@@ -293,7 +295,7 @@ Các dòng bắt buộc:
 
 | Task | Khi nào chạy | Fail khi nào, sửa thế nào |
 |---|---|---|
-| `verifyModuleDependencies` (mọi module dùng plugin library / application / jvm.library) | Trước `preBuild` và trong `check` | Module khai báo phụ thuộc vào module bị `[[rules]]` cấm: `Module ':core:ui' must not depend on ':feature:home:impl': <reason>`. Bỏ dependency đó hoặc sửa luật trong `structure.toml` nếu luật sai |
+| `verifyModuleDependencies` (mọi module dùng plugin library / application / jvm.library) | Trước `preBuild` và trong `check` | Module khai báo phụ thuộc vào module bị `[[rules]]` cấm: `Module ':core:network' must not depend on ':feature:home:impl': <reason>`. Bỏ dependency đó hoặc sửa luật trong `structure.toml` nếu luật sai |
 | `verifyReleaseHasNoDebugTool` (`:app`) | Trong `check` và mọi assemble / bundle của flavor `prod` | `debugTool` của `structure.toml` nằm trong classpath runtime của `prodDebug` / `prodRelease`: `A prod variant ... contains :debugtool`. Chỉ khai báo bằng `"devImplementation"` / `"qaImplementation"` |
 | Kover verify (`koverVerify`, `koverHtmlReport`) | Chạy tay hoặc trong CI | Module trong `[kover].modules` có line coverage dưới `minLineCoverage`. Thêm test, hoặc bỏ module khỏi danh sách |
 
@@ -315,7 +317,7 @@ Các dòng bắt buộc:
 | `No resources.properties file found` | Thiếu `app/src/main/res/resources.properties` (mục 3.1) |
 | `A prod variant ... runtime classpath contains :debugtool` | Xem mục 5 |
 | `SDK location not found` | Đặt `sdk.dir` trong `local.properties` hoặc `ANDROID_HOME` |
-| Cảnh báo / lỗi phiên bản lạ khi cùng thư viện nằm ở hai catalog (Gradle âm thầm chọn bản cao hơn) | Mỗi artifact `group:name` chỉ được ở **một** trong `pokepoke.versions.toml` và `libs.versions.toml` (ví dụ `junit` đã ở `pokepoke`, đừng thêm vào `libs`). Repo gốc có test `CatalogConsistencyTest` fail với `group:name nằm ở cả pokepoke và libs: [junit:junit]` |
+| Cảnh báo / lỗi phiên bản lạ khi cùng thư viện nằm ở hai catalog (Gradle âm thầm chọn bản cao hơn) | Mỗi artifact `group:name` chỉ được ở **một** trong `pokepoke.versions.toml`, `core.versions.toml` (nếu có) và `libs.versions.toml` (ví dụ `junit` đã ở `pokepoke`, đừng thêm vào `libs`). Repo gốc có test `CatalogConsistencyTest` fail với `group:name nằm ở cả pokepoke và libs: [junit:junit]` |
 | `ClassNotFoundException` / `Plugin ... was not found` với plugin Kover, KSP, Hilt... | Chưa đưa Gradle plugin tương ứng lên classpath (mục 2, `build.gradle.kts` gốc) |
 
 ## 7. Publish (chưa hỗ trợ)

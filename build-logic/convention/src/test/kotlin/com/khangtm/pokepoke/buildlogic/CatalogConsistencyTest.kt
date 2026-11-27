@@ -9,8 +9,8 @@ import org.tomlj.TomlTable
 import java.io.File
 
 /**
- * Hai version catalog của repo: `pokepoke` (build-logic đọc / tự thêm) và `libs` (thư viện riêng của app).
- * Mỗi artifact và mỗi plugin id chỉ nằm ở một catalog; `version.ref` chỉ trỏ [versions] cùng file; mọi alias plugin
+ * Ba version catalog của repo: `pokepoke` (build-logic đọc / tự thêm), `coreLibs` (thư viện ngoài của `:core:*`)
+ * và `libs` (thư viện riêng của app). Mỗi artifact và mỗi plugin id chỉ nằm ở một catalog; `version.ref` chỉ trỏ [versions] cùng file; mọi alias plugin
  * gọi phải có trong `pokepoke.versions.toml`.
  */
 class CatalogConsistencyTest {
@@ -18,6 +18,8 @@ class CatalogConsistencyTest {
     private val root = File("../..").canonicalFile // Gradle chạy test với working dir = build-logic/convention
     private val pokepokeText = File(root, "gradle/pokepoke.versions.toml").readText()
     private val libsText = File(root, "gradle/libs.versions.toml").readText()
+    private val coreText = File(root, "gradle/core.versions.toml").readText()
+    private val catalogs get() = mapOf("pokepoke" to pokepokeText, "coreLibs" to coreText, "libs" to libsText)
 
     // --- Logic kiểm tra (chạy được trên text giả để test chính nó) ---
 
@@ -63,21 +65,40 @@ class CatalogConsistencyTest {
 
     // --- Test trên file thật ---
 
-    @Test
-    fun `no artifact appears in both catalogs`() {
-        val duplicated = duplicates(libraries(pokepokeText), libraries(libsText))
-        assertTrue("group:name nằm ở cả pokepoke và libs: $duplicated", duplicated.isEmpty())
+    private fun <T> pairs(items: Map<String, T>): List<Triple<String, String, Pair<T, T>>> {
+        val names = items.keys.toList()
+        return names.indices.flatMap { i -> (i + 1 until names.size).map { j -> Triple(names[i], names[j], items.getValue(names[i]) to items.getValue(names[j])) } }
     }
 
     @Test
-    fun `no plugin id appears in both catalogs`() {
-        val duplicated = duplicates(pluginIds(pokepokeText), pluginIds(libsText))
-        assertTrue("plugin id nằm ở cả pokepoke và libs: $duplicated", duplicated.isEmpty())
+    fun `no artifact appears in two catalogs`() {
+        for ((a, b, texts) in pairs(catalogs)) {
+            val duplicated = duplicates(libraries(texts.first), libraries(texts.second))
+            assertTrue("group:name nằm ở cả $a và $b: $duplicated", duplicated.isEmpty())
+        }
+    }
+
+    @Test
+    fun `no plugin id appears in two catalogs`() {
+        for ((a, b, texts) in pairs(catalogs)) {
+            val duplicated = duplicates(pluginIds(texts.first), pluginIds(texts.second))
+            assertTrue("plugin id nằm ở cả $a và $b: $duplicated", duplicated.isEmpty())
+        }
+    }
+
+    @Test
+    fun `adding an artifact of coreLibs to libs is detected`() {
+        val injected = libsText.replace(
+            "[libraries]",
+            "[libraries]\nretrofit = { group = \"com.squareup.retrofit2\", name = \"retrofit\", version = \"3.0.0\" }",
+        )
+        check(injected != libsText) { "không chèn được vào libs.versions.toml" }
+        assertEquals(listOf("com.squareup.retrofit2:retrofit"), duplicates(libraries(coreText), libraries(injected)))
     }
 
     @Test
     fun `no duplicate artifact inside one catalog`() {
-        for ((name, text) in mapOf("pokepoke.versions.toml" to pokepokeText, "libs.versions.toml" to libsText)) {
+        for ((name, text) in catalogs) {
             val coordinates = libraries(text).values
             assertEquals("$name: trùng group:name", emptyList<String>(), coordinates.groupBy { it }.filter { it.value.size > 1 }.keys.toList())
         }
@@ -85,8 +106,7 @@ class CatalogConsistencyTest {
 
     @Test
     fun `version refs resolve within the same file`() {
-        assertEquals(emptyList<String>(), danglingVersionRefs(pokepokeText))
-        assertEquals(emptyList<String>(), danglingVersionRefs(libsText))
+        for ((name, text) in catalogs) assertEquals(name, emptyList<String>(), danglingVersionRefs(text))
     }
 
     @Test

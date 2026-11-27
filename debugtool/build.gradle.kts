@@ -9,8 +9,8 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.designsystem)
-    implementation(projects.core.ui)
+    implementation(projects.ui.designsystem)
+    implementation(projects.ui.common)
     implementation(projects.core.commonKotlin)
     implementation(projects.core.network)
     implementation(projects.core.storage.api)

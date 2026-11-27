@@ -1,6 +1,6 @@
 package com.khangtm.pokepoke.feature.onboarding.impl.presentation.onboarding
 
-import com.khangtm.pokepoke.core.designsystem.PokeTheme
+import com.khangtm.pokepoke.ui.designsystem.PokeTheme
 import com.khangtm.pokepoke.core.testing.ScreenshotDevices
 import com.khangtm.pokepoke.core.testing.runComposeScreenshotLightDark
 import org.junit.Test

@@ -74,7 +74,7 @@
 - [x] **T15c — Tách version catalog `pokepoke` cho build-logic (task chèn thêm).** Đọc build.md §1, §1.4, §2, §3. Tạo `gradle/pokepoke.versions.toml`, chuyển sang đó mọi version / library / plugin mà `build-logic` dùng (danh sách build.md §1.4; giữ nguyên giá trị version), phần còn lại ở `gradle/libs.versions.toml`. Root `settings.gradle.kts` khai báo catalog `pokepoke`; `build-logic/settings.gradle.kts` chỉ dùng `pokepoke`; `Catalog.kt` → `named("pokepoke")`. Sửa mọi `build.gradle.kts` dùng alias đã chuyển (`libs.plugins.pokepoke.*` → `pokepoke.plugins.pokepoke.*`, `libs.junit` → `pokepoke.junit`...). Cập nhật bảng §1.1 / §1.2 nếu đổi tên alias. Viết **`build-logic/README.md`** theo build.md §3b (viết từ code thật, tự đọc hiểu được, không trỏ sang `docs/`). Ghi `decisions.md`.
   Test (`build-logic`): đọc cả hai file thật → không trùng `group:name` / plugin id; `version.ref` chỉ trỏ `[versions]` cùng file; mọi alias plugin gọi (`addDep`, `version(...)`) tồn tại trong `pokepoke.versions.toml`.
   DoD: `./gradlew -p build-logic check` + lệnh "Giống CI" (build.md §9) xanh; `./gradlew :app:dependencies --configuration qaReleaseRuntimeClasspath` không đổi so với trước task (so sánh output, chỉ khác thứ tự thì được); `grep -rn '"libs"\|named("libs")' build-logic` không còn kết quả; tạm thêm `junit` vào `libs.versions.toml` → test chống trùng fail → hoàn lại; **kiểm chứng README**: làm đúng theo README trên project trống ở thư mục tạm (ngoài repo; `includeBuild` trỏ tới `build-logic` của repo, một module `:app` tối thiểu áp `pokepoke.android.application`, `structure.toml` / `configs/env/` / `configs/signing/debug.*` tạo theo README) → `./gradlew :app:assembleDevDebug` xanh; bước nào README thiếu / sai thì sửa README; xóa thư mục tạm.
-- [ ] **T15d — Tách nhóm `:ui` khỏi `:core`, core chỉ dùng catalog `pokepoke` (task chèn thêm).** Đọc build.md §1.4, §3a, §5, §11; plan.md §4; designsystem.md §1–§2; CLAUDE.md (quy ước package, nhóm module). Mục tiêu: `:core:*` dùng chung / publish được (build.md §11). Không đổi hành vi, chỉ đổi đường dẫn, package và catalog.
+- [x] **T15d — Tách nhóm `:ui` khỏi `:core`, core chỉ dùng catalog `pokepoke` + `coreLibs` (task chèn thêm).** Đọc build.md §1.4, §3a, §5, §11; plan.md §4; designsystem.md §1–§2; CLAUDE.md (quy ước package, nhóm module). Mục tiêu: `:core:*` dùng chung / publish được (build.md §11). Không đổi hành vi, chỉ đổi đường dẫn, package và catalog.
   1. **Chuyển module** bằng `git mv` (giữ lịch sử):
      - `core/designsystem` → `ui/designsystem` (`:ui:designsystem`, package `com.khangtm.pokepoke.ui.designsystem`).
      - `core/ui` → `ui/common` (`:ui:common`, package `com.khangtm.pokepoke.ui.common`).
@@ -89,9 +89,12 @@
        - `:business:**` không phụ thuộc `:ui:**` / `:feature:**`.
        - `:ui:translation` không phụ thuộc `**`.
      - Comment giải thích theo §11.
-  3. **Catalog (build.md §1.4):** chuyển `javax-inject`, `retrofit`, `retrofit-converter-kotlinx-serialization`, `okhttp`, `okhttp-mockwebserver`, `androidx-datastore-preferences`, `tink-android` cùng version của chúng từ `libs.versions.toml` sang `pokepoke.versions.toml`. Giữ nguyên giá trị version.
-     - Sửa mọi `libs.xxx` tương ứng thành `pokepoke.xxx`, kể cả ở `:business:data` và feature.
-     - `build.gradle.kts` dưới `core/` không còn `libs.`.
+  3. **Catalog (build.md §1.4):** chuyển `javax-inject`, `retrofit`, `retrofit-converter-kotlinx-serialization`, `okhttp`, `okhttp-mockwebserver`, `androidx-datastore-preferences`, `tink-android` cùng version của chúng từ `libs.versions.toml` sang file mới `gradle/core.versions.toml` (catalog `coreLibs`). Giữ nguyên giá trị version. `pokepoke.versions.toml` giữ nguyên.
+     - Root `settings.gradle.kts`: `create("coreLibs") { from(files("gradle/core.versions.toml")) }`; `build-logic` không đọc `coreLibs`.
+     - Sửa mọi `libs.xxx` tương ứng thành `coreLibs.xxx`, kể cả ở `:business:data` và feature.
+     - `build.gradle.kts` dưới `core/` chỉ dùng `pokepoke.*` và `coreLibs.*`, không còn `libs.`.
+     - `CatalogConsistencyTest` đọc cả ba file: fail khi trùng `group:name` / plugin id giữa hai file bất kỳ; `version.ref` chỉ trỏ cùng file; alias convention plugin phải có trong `pokepoke`. Thêm case: thêm `retrofit` vào `libs` → test fail.
+     - Cập nhật build.md §1.4, §11, CLAUDE.md (nhóm module).
   4. **Fix T11 / T12, KDoc cũ:**
      - `core/network/.../Qualifiers.kt`: `@BaseUrl` do `:app` cấp từ `BuildConfig.BASE_URL` (`configs/env/config.toml`), không phải URL hardcode.
      - `core/deeplink/.../DeepLink.kt`: ví dụ `DeepLinkConfig` dựng từ `BuildConfig.DEEPLINK_SCHEME` / `DEEPLINK_HOST`.
@@ -107,6 +110,7 @@
   - `./gradlew :app:dependencies --configuration qaReleaseRuntimeClasspath` chỉ khác ở tên project đã đổi, không thêm / bớt / đổi version thư viện ngoài.
   - `git grep -nE 'pokepoke\.core\.(designsystem|ui)\b|pokepoke\.translation\b|projects\.core\.(designsystem|ui)\b|projects\.translation\b|":translation"|:core:(designsystem|ui)\b' -- ':!docs/decisions.md' ':!docs/tasks.md'` không còn kết quả. Riêng docs có ghi chú "trước T15d" thì được giữ.
   - `git grep -n 'libs\.' -- 'core/**/build.gradle.kts'` không còn kết quả.
+  - Tạm thêm `retrofit` vào `libs.versions.toml` → `./gradlew -p build-logic check` fail (`CatalogConsistencyTest`). Hoàn lại.
   - Tạm thêm `implementation(projects.ui.translation)` vào `:core:network`: `verifyModuleDependencies` fail kèm `reason` từ `structure.toml`. Hoàn lại.
   - Tạm thêm `implementation(projects.ui.common)` vào `:business:data`: fail tương tự. Hoàn lại.
   - `verifyRoborazziDebug` xanh, không có ảnh diff.

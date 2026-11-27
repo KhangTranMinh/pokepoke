@@ -15,5 +15,5 @@ dependencies {
     implementation(projects.core.network)
     implementation(projects.core.connectivity)
     implementation(projects.core.deeplink)
-    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(coreLibs.okhttp.mockwebserver)
 }

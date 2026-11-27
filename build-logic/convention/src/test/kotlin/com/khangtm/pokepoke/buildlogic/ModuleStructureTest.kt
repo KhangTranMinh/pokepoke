@@ -7,17 +7,17 @@ import org.junit.Test
 
 class ModuleStructureTest {
 
-    private val projects = setOf(":app", ":core", ":core:testing", ":core:ui", ":translation", ":debugtool")
+    private val projects = setOf(":app", ":core", ":core:testing", ":core:network", ":ui:translation", ":debugtool")
 
     private val valid = """
         [library]
         testImplementation = [":core:testing"]
-        excludeAutoDependencies = [":core:testing", ":translation"]
+        excludeAutoDependencies = [":core:testing", ":ui:translation"]
         [feature.api]
-        api = [":core:ui"]
+        api = [":core:network"]
         [feature.impl]
-        implementation = [":core:ui"]
-        testFixtures = [":core:ui"]
+        implementation = [":core:network"]
+        testFixtures = [":core:network"]
         [app]
         debugTool = ":debugtool"
         [kover]
@@ -47,13 +47,13 @@ class ModuleStructureTest {
         assertTrue(matches(":core:*:impl", ":core:storage:impl"))
         assertFalse(matches(":core:*:impl", ":core:a:b:impl"))
         assertFalse(matches(":core:*:impl", ":core:impl"))
-        assertTrue(matches(":core:*", ":core:ui"))
+        assertTrue(matches(":core:*", ":core:network"))
         assertFalse(matches(":core:*", ":core"))
     }
 
     @Test
     fun `double star matches one or more segments`() {
-        assertTrue(matches(":core:**", ":core:ui"))
+        assertTrue(matches(":core:**", ":core:network"))
         assertTrue(matches(":core:**", ":core:storage:impl"))
         assertFalse(matches(":core:**", ":core"))
         assertTrue(matches(":**:impl", ":feature:home:impl"))
@@ -72,8 +72,8 @@ class ModuleStructureTest {
     fun `exact path matches only itself`() {
         assertTrue(matches(":debugtool", ":debugtool"))
         assertFalse(matches(":debugtool", ":debugtool:x"))
-        assertFalse(matches(":core:ui", ":core"))
-        assertFalse(matches(":core:ui", ":core:ui:impl"))
+        assertFalse(matches(":core:network", ":core"))
+        assertFalse(matches(":core:network", ":core:network:impl"))
     }
 
     @Test
@@ -83,9 +83,9 @@ class ModuleStructureTest {
         assertEquals(70, structure.koverMinLineCoverage)
         assertEquals(":debugtool", structure.appDebugTool)
         assertEquals(listOf(ArchitectureRule(listOf("**"), listOf(":app"), listOf(":debugtool"), "only app")), structure.rules)
-        assertFalse(structure.receivesLibraryAutoDependencies(":translation"))
-        assertTrue(structure.receivesLibraryAutoDependencies(":core:ui"))
-        assertTrue(structure.requiresCoverageThreshold(":core:ui"))
+        assertFalse(structure.receivesLibraryAutoDependencies(":ui:translation"))
+        assertTrue(structure.receivesLibraryAutoDependencies(":core:network"))
+        assertTrue(structure.requiresCoverageThreshold(":core:network"))
         assertFalse(structure.requiresCoverageThreshold(":app"))
     }
 
@@ -124,10 +124,10 @@ class ModuleStructureTest {
 
     @Test
     fun `wrong type fails`() {
-        assertTrue(broken("api = [\":core:ui\"]", "api = \":core:ui\"").contains("'api' must be an array of strings"))
+        assertTrue(broken("api = [\":core:network\"]", "api = \":core:network\"").contains("'api' must be an array of strings"))
         assertTrue(broken("minLineCoverage = 70", "minLineCoverage = \"70\"").contains("'minLineCoverage' must be an integer"))
         assertTrue(broken("debugTool = \":debugtool\"", "debugTool = 1").contains("'debugTool' must be a string"))
-        assertTrue(broken("api = [\":core:ui\"]", "api = [1]").contains("'api[0]' must be a string"))
+        assertTrue(broken("api = [\":core:network\"]", "api = [1]").contains("'api[0]' must be a string"))
     }
 
     @Test
@@ -150,7 +150,7 @@ class ModuleStructureTest {
     fun `exact path missing from settings fails`() {
         val message = broken("debugTool = \":debugtool\"", "debugTool = \":debugtol\"")
         assertTrue(message, message.contains("[app] debugTool = ':debugtol'") && message.contains("no such project"))
-        assertTrue(broken("api = [\":core:ui\"]", "api = [\":core:uii\"]").contains("no such project"))
+        assertTrue(broken("api = [\":core:network\"]", "api = [\":core:networkk\"]").contains("no such project"))
         assertTrue(broken("except = [\":app\"]", "except = [\":ap\"]").contains("no such project"))
     }
 

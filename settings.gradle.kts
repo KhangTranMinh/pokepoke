@@ -27,18 +27,19 @@ dependencyResolutionManagement {
         create("pokepoke") {
             from(files("gradle/pokepoke.versions.toml"))
         }
+        // Thư viện ngoài của :core:* (build-logic không đọc catalog này).
+        create("coreLibs") {
+            from(files("gradle/core.versions.toml"))
+        }
     }
 }
 
 rootProject.name = "PokePoke"
 include(
     ":app",
-    ":translation",
     ":core:testing",
     ":core:common-kotlin",
     ":core:common-android",
-    ":core:designsystem",
-    ":core:ui",
     ":core:network",
     ":core:connectivity",
     ":core:storage:api",
@@ -63,5 +64,8 @@ include(
     ":feature:favourite:impl",
     ":feature:profile:api",
     ":feature:profile:impl",
+    ":ui:designsystem",
+    ":ui:common",
+    ":ui:translation",
     ":debugtool",
 )

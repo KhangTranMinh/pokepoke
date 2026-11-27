@@ -9,7 +9,7 @@
 #
 # Pattern (dùng được ở excludeAutoDependencies, kover.modules, rules.from / except / to):
 #   *    = đúng một đoạn của project path        ":core:*:impl" khớp ":core:storage:impl"
-#   **   = một hoặc nhiều đoạn                    ":core:**" khớp ":core:ui" và ":core:storage:impl"
+#   **   = một hoặc nhiều đoạn                    ":core:**" khớp ":core:network" và ":core:storage:impl"
 #   "**" đứng một mình = mọi module
 # Đường dẫn dùng làm dependency (testImplementation, api, implementation, testFixtures, debugTool)
 # phải viết chính xác, không có ký tự đại diện.
@@ -29,10 +29,10 @@ testImplementation = [
 
 # Module KHÔNG nhận dependency tự thêm ở trên:
 # - :core:testing: chính là bộ công cụ test, không tự phụ thuộc vào mình.
-# - :translation: chỉ chứa resource, không được phụ thuộc module nào (xem luật cuối file).
+# - :ui:translation: chỉ chứa resource, không được phụ thuộc module nào (xem luật cuối file).
 excludeAutoDependencies = [
     ":core:testing",
-    ":translation",
+    ":ui:translation",
 ]
 
 
@@ -57,11 +57,11 @@ api = [
 # Tự thêm `implementation(project(x))`: những gì mọi màn hình cần
 # (design system, UI dùng chung, AppResult, Navigator, string).
 implementation = [
-    ":core:designsystem",
-    ":core:ui",
+    ":ui:designsystem",
+    ":ui:common",
     ":core:common-kotlin",
     ":core:navigation",
-    ":translation",
+    ":ui:translation",
 ]
 
 # Tự thêm `testImplementation(testFixtures(project(x)))`: fake dùng trong test của feature
@@ -89,7 +89,7 @@ debugTool = ":debugtool"
 # Phần trăm line coverage tối thiểu; `koverVerify` fail nếu module bên dưới thấp hơn.
 minLineCoverage = 70
 
-# Module bắt buộc đạt ngưỡng (module chứa logic). Module khác (api, designsystem, ui, app...)
+# Module bắt buộc đạt ngưỡng (module chứa logic). Module khác (api, :ui:*, app...)
 # vẫn được đo nhưng không có ngưỡng.
 modules = [
     # core có logic
@@ -130,20 +130,28 @@ to = [
 ]
 reason = "only :app may depend on :impl / :debugtool / :business:data (Hilt gom binding ở :app)"
 
-# core là tầng dưới cùng, dùng chung cho mọi project: không biết gì về nghiệp vụ hay feature.
+# :core:* là phần dùng chung giữa các project (sẽ publish được, build.md §11): chỉ phụ thuộc :core:* khác.
+# Không biết gì về UI (:ui:*, kể cả string), nghiệp vụ, feature, :app hay công cụ debug.
 [[rules]]
 from = [":core:**"]
 to = [
+    ":ui:**",
     ":business:**",
     ":feature:**",
+    ":app",
+    ":debugtool",
 ]
-reason = ":core must not depend on :business or :feature"
+reason = ":core is shared code: it may depend only on other :core modules, not on :ui / :business / :feature / :app / :debugtool"
 
 # business (Pokémon, Favourite) độc lập với UI: feature dùng business, không có chiều ngược lại.
+# Cũng không phụ thuộc :ui:* (kể cả string): business chỉ trả dữ liệu / lỗi, việc hiển thị là của feature.
 [[rules]]
 from = [":business:**"]
-to = [":feature:**"]
-reason = ":business must not depend on :feature"
+to = [
+    ":ui:**",
+    ":feature:**",
+]
+reason = ":business must not depend on :ui or :feature"
 
 # debugtool chỉ xem tầng hạ tầng (network log, storage, deeplink), không đụng nghiệp vụ / màn hình.
 [[rules]]
@@ -154,8 +162,8 @@ to = [
 ]
 reason = ":debugtool must not depend on :business or :feature"
 
-# translation chỉ chứa string resource; mọi module được phụ thuộc vào nó, nó không phụ thuộc ai.
+# :ui:translation chỉ chứa string resource; module UI / feature được phụ thuộc vào nó, nó không phụ thuộc ai.
 [[rules]]
-from = [":translation"]
+from = [":ui:translation"]
 to = ["**"]
-reason = ":translation chỉ chứa resource, không phụ thuộc module nào"
+reason = ":ui:translation chỉ chứa resource, không phụ thuộc module nào"

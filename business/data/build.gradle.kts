@@ -20,5 +20,5 @@ dependencies {
     testImplementation(testFixtures(projects.business.domain))
     testImplementation(testFixtures(projects.core.network))
     testImplementation(testFixtures(projects.core.connectivity))
-    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(coreLibs.okhttp.mockwebserver)
 }
