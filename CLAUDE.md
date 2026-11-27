@@ -36,7 +36,8 @@
 
 ## Quy ước code
 
-- Package = namespace module: `com.khangtm.pokepoke.<core|domain|data|feature>.<name>[.api|.impl]`; `:app` → `com.khangtm.pokepoke`; `:debugtool` → `com.khangtm.pokepoke.debugtool`; `:translation` → `com.khangtm.pokepoke.translation`.
+- Package = namespace module: `com.khangtm.pokepoke.<core|ui|business|feature>.<name>[.api|.impl]` (vd. `:ui:translation` → `com.khangtm.pokepoke.ui.translation`); `:app` → `com.khangtm.pokepoke`; `:debugtool` → `com.khangtm.pokepoke.debugtool`.
+- **Nhóm module** (`docs/design/build.md` §11): `:core:*` = hạ tầng **dùng chung, sẽ publish** — chỉ phụ thuộc `:core:*`, thư viện ngoài chỉ lấy từ catalog `pokepoke` (không `libs.*`), không string / resource riêng của app; `:ui:*` = UI riêng của app (`designsystem`, `common`, `translation`); `:business:*`, `:feature:*`, `:app`, `:debugtool`.
 - Kotlin source ở `src/main/kotlin`, test ở `src/test/kotlin`.
 - Chỉ `:app` được phụ thuộc module `:impl`, `:business:data` và `:debugtool` (build tự kiểm tra).
 - Đường dẫn module trong `build-logic` (dependency tự thêm, luật kiến trúc, ngưỡng Kover, debugtool) **không hardcode**: khai báo ở `configs/build/structure.toml` (`docs/design/build.md` §3a). Thêm module / luật mới → sửa file này.
@@ -45,7 +46,7 @@
 - `:feature:*:api` chỉ chứa `NavKey`, use case interface (chỉ khi module khác cần), model cho use case, extension point. Repository / DAO / DTO luôn `internal` trong `:impl`.
 - Key điều hướng đặt tên `XxxNavKey` (implement `NavKey` của Navigation 3), vd. `HomeNavKey`, `DetailsNavKey(pokemonId)` — tránh nhầm với key của storage / Room / Compose `key()`.
 - Mỗi screen: `XxxUiState`, `XxxUiAction`, `XxxViewModel` (`uiState: StateFlow`, `onAction()`), `XxxRoute.kt` (chỉ root, biết ViewModel), `XxxScreen.kt` (stateless, preview được), `XxxPreviews.kt`.
-- Không hardcode string: mọi text và `contentDescription` nằm trong module `:translation` (từ T07a), trong `values/strings.xml` (en) và `values-vi/strings.xml` (vi); key có tiền tố module (`home_`, `details_`...). Chuỗi không cần dịch (vd. `app_name`) đặt ở `values/non-translation.xml`. Chỉ có hai file này. Module khác import `com.khangtm.pokepoke.translation.R`. `:debugtool` giữ strings riêng, chỉ cần `values/`. Ngoại lệ duy nhất: `app/src/<flavor>/res/values/non-translation.xml` được override key **đã có** trong `:translation` (hiện chỉ `app_name`) theo flavor, không thêm key mới (`docs/design/build.md` §4a).
+- Không hardcode string: mọi text và `contentDescription` nằm trong module `:ui:translation` (từ T07a; trước T15d là `:translation`), trong `values/strings.xml` (en) và `values-vi/strings.xml` (vi); key có tiền tố module (`home_`, `details_`...). Chuỗi không cần dịch (vd. `app_name`) đặt ở `values/non-translation.xml`. Chỉ có hai file này. Module khác import `com.khangtm.pokepoke.ui.translation.R`. `:debugtool` giữ strings riêng, chỉ cần `values/`. Ngoại lệ duy nhất: `app/src/<flavor>/res/values/non-translation.xml` được override key **đã có** trong `:ui:translation` (hiện chỉ `app_name`) theo flavor, không thêm key mới (`docs/design/build.md` §4a).
 - Không dùng `!!`; không `GlobalScope`; coroutine dùng dispatcher inject (`@IoDispatcher`).
 - Tên test: backtick mô tả hành vi, vd. ``fun `offline with cache emits content once`()``.
 

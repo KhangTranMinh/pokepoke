@@ -74,6 +74,42 @@
 - [x] **T15c — Tách version catalog `pokepoke` cho build-logic (task chèn thêm).** Đọc build.md §1, §1.4, §2, §3. Tạo `gradle/pokepoke.versions.toml`, chuyển sang đó mọi version / library / plugin mà `build-logic` dùng (danh sách build.md §1.4; giữ nguyên giá trị version), phần còn lại ở `gradle/libs.versions.toml`. Root `settings.gradle.kts` khai báo catalog `pokepoke`; `build-logic/settings.gradle.kts` chỉ dùng `pokepoke`; `Catalog.kt` → `named("pokepoke")`. Sửa mọi `build.gradle.kts` dùng alias đã chuyển (`libs.plugins.pokepoke.*` → `pokepoke.plugins.pokepoke.*`, `libs.junit` → `pokepoke.junit`...). Cập nhật bảng §1.1 / §1.2 nếu đổi tên alias. Viết **`build-logic/README.md`** theo build.md §3b (viết từ code thật, tự đọc hiểu được, không trỏ sang `docs/`). Ghi `decisions.md`.
   Test (`build-logic`): đọc cả hai file thật → không trùng `group:name` / plugin id; `version.ref` chỉ trỏ `[versions]` cùng file; mọi alias plugin gọi (`addDep`, `version(...)`) tồn tại trong `pokepoke.versions.toml`.
   DoD: `./gradlew -p build-logic check` + lệnh "Giống CI" (build.md §9) xanh; `./gradlew :app:dependencies --configuration qaReleaseRuntimeClasspath` không đổi so với trước task (so sánh output, chỉ khác thứ tự thì được); `grep -rn '"libs"\|named("libs")' build-logic` không còn kết quả; tạm thêm `junit` vào `libs.versions.toml` → test chống trùng fail → hoàn lại; **kiểm chứng README**: làm đúng theo README trên project trống ở thư mục tạm (ngoài repo; `includeBuild` trỏ tới `build-logic` của repo, một module `:app` tối thiểu áp `pokepoke.android.application`, `structure.toml` / `configs/env/` / `configs/signing/debug.*` tạo theo README) → `./gradlew :app:assembleDevDebug` xanh; bước nào README thiếu / sai thì sửa README; xóa thư mục tạm.
+- [ ] **T15d — Tách nhóm `:ui` khỏi `:core`, core chỉ dùng catalog `pokepoke` (task chèn thêm).** Đọc build.md §1.4, §3a, §5, §11; plan.md §4; designsystem.md §1–§2; CLAUDE.md (quy ước package, nhóm module). Mục tiêu: `:core:*` dùng chung / publish được (build.md §11). Không đổi hành vi, chỉ đổi đường dẫn, package và catalog.
+  1. **Chuyển module** bằng `git mv` (giữ lịch sử):
+     - `core/designsystem` → `ui/designsystem` (`:ui:designsystem`, package `com.khangtm.pokepoke.ui.designsystem`).
+     - `core/ui` → `ui/common` (`:ui:common`, package `com.khangtm.pokepoke.ui.common`).
+     - `translation` → `ui/translation` (`:ui:translation`, namespace `com.khangtm.pokepoke.ui.translation`).
+     - Sửa `settings.gradle.kts`, `namespace`, thư mục package, mọi `package` / `import` (kể cả `...translation.R`) và `projects.core.designsystem` / `projects.core.ui` / `projects.translation`.
+     - **Giữ nguyên tên key string** (`designsystem_`, `ui_`...). Test tiền tố key của translation đi theo module.
+  2. **`configs/build/structure.toml`:**
+     - Đổi `:translation` → `:ui:translation`.
+     - `[feature.impl] implementation` dùng `:ui:designsystem`, `:ui:common`, `:ui:translation`.
+     - Sửa `[[rules]]` cho khớp bảng build.md §5:
+       - `:core:**` không phụ thuộc `:ui:**` / `:business:**` / `:feature:**` / `:app` / `:debugtool`.
+       - `:business:**` không phụ thuộc `:ui:**` / `:feature:**`.
+       - `:ui:translation` không phụ thuộc `**`.
+     - Comment giải thích theo §11.
+  3. **Catalog (build.md §1.4):** chuyển `javax-inject`, `retrofit`, `retrofit-converter-kotlinx-serialization`, `okhttp`, `okhttp-mockwebserver`, `androidx-datastore-preferences`, `tink-android` cùng version của chúng từ `libs.versions.toml` sang `pokepoke.versions.toml`. Giữ nguyên giá trị version.
+     - Sửa mọi `libs.xxx` tương ứng thành `pokepoke.xxx`, kể cả ở `:business:data` và feature.
+     - `build.gradle.kts` dưới `core/` không còn `libs.`.
+  4. **Fix T11 / T12, KDoc cũ:**
+     - `core/network/.../Qualifiers.kt`: `@BaseUrl` do `:app` cấp từ `BuildConfig.BASE_URL` (`configs/env/config.toml`), không phải URL hardcode.
+     - `core/deeplink/.../DeepLink.kt`: ví dụ `DeepLinkConfig` dựng từ `BuildConfig.DEEPLINK_SCHEME` / `DEEPLINK_HOST`.
+  5. **build-logic:**
+     - Sửa path trong `ModuleStructureTest` / `ModuleDependencyRulesTest`. Mọi case cũ giữ nguyên kết quả.
+     - Thêm case: `:core:network` → `:ui:translation` fail; `:core:network` → `:ui:common` fail; `:business:data` → `:ui:translation` fail; `:feature:home:impl` → `:ui:common` OK.
+     - Sửa ví dụ trong `build-logic/README.md`: không còn `:core:ui` / `:translation`. Thêm một dòng ghi rằng `:core:*` là phần dùng chung, chỉ dùng catalog `pokepoke`.
+  6. **Screenshot Roborazzi:** ảnh đi theo module. Tên file có package thì record lại, nhưng ảnh phải trùng pixel với ảnh cũ (so sánh trước khi xóa ảnh cũ); lệch thì dừng và tìm nguyên nhân.
+  7. Ghi `decisions.md`.
+
+  DoD:
+  - `./gradlew -p build-logic check` và lệnh "Giống CI" (build.md §9) xanh.
+  - `./gradlew :app:dependencies --configuration qaReleaseRuntimeClasspath` chỉ khác ở tên project đã đổi, không thêm / bớt / đổi version thư viện ngoài.
+  - `git grep -nE 'pokepoke\.core\.(designsystem|ui)\b|pokepoke\.translation\b|projects\.core\.(designsystem|ui)\b|projects\.translation\b|":translation"|:core:(designsystem|ui)\b' -- ':!docs/decisions.md' ':!docs/tasks.md'` không còn kết quả. Riêng docs có ghi chú "trước T15d" thì được giữ.
+  - `git grep -n 'libs\.' -- 'core/**/build.gradle.kts'` không còn kết quả.
+  - Tạm thêm `implementation(projects.ui.translation)` vào `:core:network`: `verifyModuleDependencies` fail kèm `reason` từ `structure.toml`. Hoàn lại.
+  - Tạm thêm `implementation(projects.ui.common)` vào `:business:data`: fail tương tự. Hoàn lại.
+  - `verifyRoborazziDebug` xanh, không có ảnh diff.
 - [ ] **T16 — `:feature:auth`.** Đọc screens.md §3, contracts.md §10. Repository, `LoginUseCase`, `TokenGenerator`, `Clock` (internal); `ObserveAuthStateUseCase`/`LogoutUseCase` (api) + `FakeAuthSession`; interceptor, `SessionCleaner` set, screen.
   Test: repository (FakeSecureStorage, lỗi storage → `Local.*`); login đúng / sai / trim username / lỗi ghi → Failure, token 32 byte ngẫu nhiên; logout xóa session + gọi mọi cleaner (cleaner hoặc clearSession lỗi → vẫn chạy hết, trả Failure đầu tiên); `ObserveAuthState` phát lại khi login / logout; ViewModel (`LoggedIn` / `InvalidCredentials` / Failure → message); interceptor cho Push / ReplaceTop / ResetTo / không RequiresAuth / đã login; ViewModel; UI + screenshot (trống, lỗi, đang gửi).
   DoD: như T15 cho auth.

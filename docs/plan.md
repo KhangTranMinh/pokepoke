@@ -50,7 +50,7 @@ dependencies {
 | `pokepoke.android.library` | SDK, JVM, lint, thư viện unit test chung |
 | `pokepoke.android.compose` | Bật Compose, Compose BOM, tooling preview, Compose UI test (Robolectric), Roborazzi |
 | `pokepoke.android.feature.api` | library + `testFixtures` (chứa fake của các interface public) + `core:common-kotlin`, `core:navigation` |
-| `pokepoke.android.feature.impl` | library + compose + hilt + `core:designsystem`, `core:ui`, `core:common-kotlin`, `core:navigation`, `:translation` + thư viện test |
+| `pokepoke.android.feature.impl` | library + compose + hilt + `ui:designsystem`, `ui:common`, `ui:translation`, `core:common-kotlin`, `core:navigation` + thư viện test |
 | `pokepoke.hilt` | Hilt + KSP |
 | `pokepoke.room` | Room + KSP + schema export + thư viện test DAO |
 | `pokepoke.kotlin.serialization` | Plugin kotlinx-serialization + `kotlinx-serialization-json` |
@@ -80,10 +80,10 @@ Convention plugin đọc qua `VersionCatalogsExtension`. Chỉ sửa một chỗ
 Check trong convention plugin, **build fail** nếu (chi tiết: build.md §5):
 - Module nào ngoài `:app` phụ thuộc vào một module `:impl` hoặc `:debugtool`.
 - Module nào ngoài `:app` phụ thuộc vào `:business:data` (kể cả `:business:data` khác).
-- `:core:*` phụ thuộc vào `:business:domain`, `:business:data` hoặc `:feature:*`.
-- `:business:domain` hoặc `:business:data` phụ thuộc vào `:feature:*`.
+- `:core:*` phụ thuộc vào module ngoài `:core:*` (`:ui:*`, `:business:*`, `:feature:*`, `:app`, `:debugtool`) — core dùng chung, sẽ publish (build.md §11).
+- `:business:domain` hoặc `:business:data` phụ thuộc vào `:ui:*` hoặc `:feature:*`.
 - `:debugtool` phụ thuộc vào `:business:domain`, `:business:data` hoặc `:feature:*`.
-- `:translation` phụ thuộc vào bất kỳ module nào.
+- `:ui:translation` phụ thuộc vào bất kỳ module nào.
 - Runtime classpath của variant `prod` (`prodDebug`, `prodRelease`) chứa `:debugtool` (`:app` chỉ khai báo `devImplementation` + `qaImplementation`).
 
 ## 3. Versioning: `version.properties`
@@ -108,11 +108,9 @@ versionCode=12
                                     cấu hình Coil, base URL PokeAPI, locales_config
 :build-logic (included)
 
-# Core — chỉ hạ tầng generic
+# Core — chỉ hạ tầng generic, dùng chung cho project khác, sẽ publish (build.md §11): chỉ phụ thuộc core
 :core:common-kotlin              ← (JVM thuần) DataResult / AppResult, network-first helper, qualifier dispatcher, AppInfo
 :core:common-android             ← AppInfoImpl + Hilt module (dispatchers, ApplicationScope); chỉ :app phụ thuộc
-:core:designsystem                ← theme, màu, typography, component dùng chung
-:core:ui                          ← composable dùng chung (RemoteImage, loading/error/empty state, adaptive layout)
 :core:network                    ← (không tách api/impl) HttpClient, JSON, mapping lỗi, hook Set<Interceptor>; public: ApiServiceFactory,
                                     @BaseUrl, @AppInterceptors, toNetworkDataError; cài đặt internal; base URL do :app cấp
 :core:connectivity                ← NetworkMonitor (trạng thái kết nối); tách riêng để module chỉ cần mạng không kéo Retrofit
@@ -120,8 +118,12 @@ versionCode=12
 :core:securestorage:api / :impl   ← lưu/đọc có mã hóa, generic
 :core:navigation                  ← (không tách api/impl) NavKey, Navigator, contract entry/interceptor/tab; NavigatorImpl internal
 :core:deeplink                    ← (không tách api/impl) DeepLinkHandler, DeepLinkDispatcher, URI matching; cài đặt internal
-:translation                      ← mọi strings.xml (values/ en + values-vi/ vi), chuỗi không dịch ở non-translation.xml; sau này có thể thêm remote translation
 :core:testing                     ← tiện ích test (không chứa test case)
+
+# UI — phần giao diện riêng của app (theme, string), không publish
+:ui:designsystem                  ← theme, màu, typography, icon, component dùng chung
+:ui:common                        ← composable dùng chung (RemoteImage, loading/error/empty state, adaptive layout)
+:ui:translation                   ← mọi strings.xml (values/ en + values-vi/ vi), chuỗi không dịch ở non-translation.xml; sau này có thể thêm remote translation
 
 # Business — core business của app (Pokémon + Favourite), một chỗ duy nhất
 :business:domain                  ← (Kotlin/JVM thuần) model, repository interface, use case — feature chỉ phụ thuộc module này
@@ -152,7 +154,7 @@ versionCode=12
 
 | Nhóm module | Sở hữu |
 |---|---|
-| `core:*`, `:business:domain`, `:business:data`, `build-logic`, `debugtool` | **Team Core** (đổi contract `:business:domain` cần thống nhất với team Feature) |
+| `core:*`, `ui:*`, `:business:domain`, `:business:data`, `build-logic`, `debugtool` | **Team Core** (đổi contract `:business:domain` cần thống nhất với team Feature) |
 | `feature:*` (mỗi feature một team, hoặc một team giữ nhiều feature) | **Các team Feature** |
 | `:app` | Team Core (chỉ là nơi lắp ráp; feature team review phần đăng ký của mình) |
 
@@ -177,7 +179,7 @@ Phụ thuộc giữa các feature:
 | `core:storage` | Key-value store generic | Flag onboarding → `onboarding:impl` |
 | `core:securestorage` | Lưu/đọc có mã hóa | Token → `auth:impl` |
 | `core:network` | HttpClient, JSON, mapping lỗi, hook interceptor | Base URL → `:app`; endpoint, DTO → feature gọi API; network log → `debugtool` |
-| `core:ui` | `RemoteImage` (bọc Coil) | Cấu hình `ImageLoader` → `:app`; URL ảnh Pokémon → `:business:data` |
+| `ui:common` | `RemoteImage` (bọc Coil) | Cấu hình `ImageLoader` → `:app`; URL ảnh Pokémon → `:business:data` |
 | *(không có `core:database`)* | — | Room yêu cầu mọi entity trong một class `@Database` → DB chung buộc core biết entity. Mỗi module có DB riêng, dùng chung cấu hình qua plugin `pokepoke.room` |
 | *(không có `core:locale`)* | — | Xem mục 9 |
 
@@ -282,7 +284,7 @@ API không hỗ trợ fuzzy search → chỉ tìm **chính xác**:
 
 - Room **chỉ lưu URL**, không lưu blob.
 - Cache bytes do **Coil disk cache** (LRU, tự quản dung lượng) — ảnh được cache **khi hiển thị**, không tải trước.
-- Cấu hình `ImageLoader` ở `:app`; composable `RemoteImage` ở `core:ui`; feature không gọi Coil trực tiếp.
+- Cấu hình `ImageLoader` ở `:app`; composable `RemoteImage` ở `ui:common`; feature không gọi Coil trực tiếp.
 
 ## 6. Navigation & deeplink
 
@@ -291,7 +293,7 @@ Dùng **Navigation 3** (đã chốt).
 ### 6.1. Single Activity — phù hợp điện thoại gập
 
 - Navigation 3 + Material3 Adaptive (`ListDetailSceneStrategy`): mở máy → list và Details hiển thị cạnh nhau; gập → 1 pane. Cùng một back stack, không thêm code điều hướng.
-- `NavigationSuiteScaffold` tự chuyển bottom bar ↔ navigation rail theo `WindowSizeClass` (trong `main:impl` / `core:ui`).
+- `NavigationSuiteScaffold` tự chuyển bottom bar ↔ navigation rail theo `WindowSizeClass` (trong `main:impl` / `ui:common`).
 - Khai báo `configChanges` (screenSize, smallestScreenSize, screenLayout, orientation) để Compose tự relayout khi gập/mở thay vì recreate activity. State vẫn giữ bằng ViewModel / `rememberSaveable`.
 - Một nơi nhận intent, một `Navigator` → deeplink và auth guard đơn giản. Multi activity phải đồng bộ back stack giữa nhiều activity và không hiển thị được 2 pane.
 
@@ -403,7 +405,7 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
 ### 8.2. Độc lập & chỉ debug
 
 - `:app` khai báo `devImplementation(projects.debugtool)` + `qaImplementation(projects.debugtool)` — có ở mọi variant dev / qa (kể cả `qaRelease`: QA cần network log / DB); flavor **`prod`** (`prodDebug`, `prodRelease`) không chứa một dòng code nào của debugtool. Check ở mục 2.3 bảo đảm điều này (build.md §4a).
-- **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`designsystem`, `ui`, `common-kotlin`, `network`, `storage:api`, `securestorage:api`, `deeplink`).
+- **Không module nào khác phụ thuộc `:debugtool`**; feature không biết nó tồn tại. Debugtool chỉ phụ thuộc `core:*` (`common-kotlin`, `network`, `storage:api`, `securestorage:api`, `deeplink`) và `ui:designsystem`, `ui:common`.
 - Kết nối hoàn toàn qua Hilt multibinding / contract generic của core: Hilt tự gom module của debugtool khi build debug, release thì hook `Set<Interceptor>` rỗng ở flavor `prod` (khai báo `@Multibinds` trong `core:network`).
 - **Một module duy nhất, không tách `api`/`impl`**: không ai gọi vào debugtool nên không có contract để public.
 - **Điểm vào: nút con bọ 🐞 overlay trên mọi activity**
@@ -411,22 +413,22 @@ Công cụ cho dev / QA, **chỉ có trong debug build**, độc lập với fea
   - Mỗi activity được tạo → gắn một `ComposeView` chứa nút con bọ nổi vào `android.R.id.content` của activity đó. Không cần quyền `SYSTEM_ALERT_WINDOW`.
   - Nút kéo thả được, tự bám mép màn hình, nhớ vị trí; nhấn giữ để ẩn tạm.
   - Bấm nút → mở `DebugToolActivity` riêng (không gắn nút vào chính activity này). Không chen vào navigation của app.
-- UI dùng `core:designsystem` để thống nhất style; theo cùng pattern UiState / UiAction (mục 7).
+- UI dùng `ui:designsystem` để thống nhất style; theo cùng pattern UiState / UiAction (mục 7).
 - Có test riêng: interceptor ghi log đúng, ring buffer, đọc schema SQLite (Robolectric).
 
 ## 9. Đa ngôn ngữ
 
-Chuỗi giao diện nằm ở `:translation` (mục 9a); việc đổi ngôn ngữ không cần module riêng:
+Chuỗi giao diện nằm ở `:ui:translation` (mục 9a); việc đổi ngôn ngữ không cần module riêng:
 - `profile:impl` gọi thẳng `AppCompatDelegate.setApplicationLocales(...)`.
 - Lựa chọn được lưu tự động: Android 13+ do hệ thống; Android 11–12 do AppCompat (`autoStoreLocales` trong manifest). Không lưu vào `core:storage`.
 - Chưa chọn → theo ngôn ngữ máy (không phải en/vi → en). Đã chọn → giữ nguyên dù đổi ngôn ngữ máy.
 - `locales_config.xml` + cấu hình manifest ở `:app`.
 
-### 9a. `:translation`
+### 9a. `:ui:translation`
 
 - Nằm ở root, **ngang hàng** `core` / `data` / `feature` (không thuộc `core`); không phụ thuộc module nào, mọi module khác được phụ thuộc.
 - Module Android library chỉ chứa resource. Chỉ có hai file: `strings.xml` ở `values/` (en) và `values-vi/` (vi), key có tiền tố module; chuỗi không cần dịch (vd. `app_name`) ở `values/non-translation.xml`.
-- Module khác dùng `import com.khangtm.pokepoke.translation.R`. Hiện không có code; nếu sau này cần remote translation thì thêm vào module này mà không đụng các feature.
+- Module khác dùng `import com.khangtm.pokepoke.ui.translation.R`. Hiện không có code; nếu sau này cần remote translation thì thêm vào module này mà không đụng các feature.
 - `:debugtool` giữ strings riêng (chỉ `values/`), vì debugtool không được lọt vào release.
 - Test kiểm tra khớp key / placeholder giữa các ngôn ngữ và tiền tố key hợp lệ.
 
