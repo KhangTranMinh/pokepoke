@@ -7,7 +7,7 @@ import org.junit.Test
 class ModuleDependencyRulesTest {
 
     private fun violations(module: String, vararg deps: String) =
-        ModuleDependencyRules.violations(module, deps.toList())
+        ModuleDependencyRules.violations(RealStructure.structure.rules, module, deps.toList())
 
     @Test
     fun `app may depend on impl and debugtool`() {
@@ -82,10 +82,23 @@ class ModuleDependencyRulesTest {
     }
 
     @Test
-    fun `coverage threshold applies to the expected modules only`() {
-        val required = listOf(":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity", ":core:storage:impl", ":business:domain", ":business:data", ":feature:home:impl", ":debugtool")
-        val notRequired = listOf(":core:designsystem", ":core:storage:api", ":feature:home:api", ":core:testing", ":app")
-        required.forEach { assertTrue(it, KoverConventionPlugin.requiresCoverageThreshold(it)) }
-        notRequired.forEach { assertTrue(it, !KoverConventionPlugin.requiresCoverageThreshold(it)) }
+    fun `message contains the reason from structure toml`() {
+        val message = violations(":feature:favourite:impl", ":feature:home:impl").single()
+        assertTrue(message, message.contains("only :app may depend on :impl / :debugtool / :business:data"))
+        assertTrue(violations(":core:ui", ":feature:home:api").single().contains(":core must not depend on :business or :feature"))
+    }
+
+    @Test
+    fun `except removes a module from a rule`() {
+        val rules = listOf(ArchitectureRule(listOf("**"), listOf(":app", ":core:**"), listOf(":x"), "r"))
+        assertTrue(ModuleDependencyRules.violations(rules, ":app", listOf(":x")).isEmpty())
+        assertTrue(ModuleDependencyRules.violations(rules, ":core:ui", listOf(":x")).isEmpty())
+        assertEquals(1, ModuleDependencyRules.violations(rules, ":feature:a", listOf(":x")).size)
+    }
+
+    @Test
+    fun `a module depending on itself is ignored and duplicates are reported once`() {
+        assertTrue(violations(":feature:home:impl", ":feature:home:impl").isEmpty())
+        assertEquals(1, violations(":core:ui", ":feature:home:api", ":feature:home:api").size)
     }
 }

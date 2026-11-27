@@ -23,9 +23,13 @@ abstract class VerifyModuleDependenciesTask : DefaultTask() {
     @get:Input
     abstract val declaredProjectDependencies: ListProperty<String>
 
+    /** `[[rules]]` of configs/build/structure.toml. */
+    @get:Input
+    abstract val rules: ListProperty<ArchitectureRule>
+
     @TaskAction
     fun verify() {
-        val violations = ModuleDependencyRules.violations(modulePath.get(), declaredProjectDependencies.get())
+        val violations = ModuleDependencyRules.violations(rules.get(), modulePath.get(), declaredProjectDependencies.get())
         if (violations.isNotEmpty()) {
             throw GradleException(
                 "Architecture violation(s):\n" + violations.joinToString("\n") { " - $it" } +
@@ -40,11 +44,16 @@ abstract class VerifyReleaseHasNoDebugToolTask : DefaultTask() {
     @get:Input
     abstract val releaseProjectPaths: SetProperty<String>
 
+    /** `[app].debugTool` of configs/build/structure.toml. */
+    @get:Input
+    abstract val debugToolPath: Property<String>
+
     @TaskAction
     fun verify() {
-        if (":debugtool" in releaseProjectPaths.get()) {
+        val debugTool = debugToolPath.get()
+        if (debugTool in releaseProjectPaths.get()) {
             throw GradleException(
-                "A prod variant (prodDebug / prodRelease) runtime classpath contains :debugtool. " +
+                "A prod variant (prodDebug / prodRelease) runtime classpath contains $debugTool. " +
                     "Declare it with devImplementation / qaImplementation only (docs/design/build.md §4a, §5).",
             )
         }
@@ -54,10 +63,12 @@ abstract class VerifyReleaseHasNoDebugToolTask : DefaultTask() {
 /** Registers `verifyModuleDependencies` and hooks it into `preBuild` and `check`. */
 internal fun Project.registerVerifyModuleDependencies() {
     val projectPath = path // not `path` inside the lambda below: there it is the task's path
+    val structure = moduleStructure()
     val verify = tasks.register<VerifyModuleDependenciesTask>("verifyModuleDependencies") {
         group = "verification"
         description = "Fails when the module breaks the architecture dependency rules."
         modulePath.set(projectPath)
+        rules.set(structure.rules)
     }
     afterEvaluate {
         // Collected eagerly into plain strings so the task stays configuration-cache friendly.
@@ -73,9 +84,11 @@ internal fun Project.registerVerifyModuleDependencies() {
 
 /** Registers `verifyReleaseHasNoDebugTool` for the application module. */
 internal fun Project.registerVerifyReleaseHasNoDebugTool() {
+    val debugTool = moduleStructure().appDebugTool
     val verify = tasks.register<VerifyReleaseHasNoDebugToolTask>("verifyReleaseHasNoDebugTool") {
         group = "verification"
-        description = "Fails when :debugtool is on the prodDebug or prodRelease runtime classpath."
+        description = "Fails when the debug tool module ($debugTool) is on the prodDebug or prodRelease runtime classpath."
+        debugToolPath.set(debugTool)
     }
     afterEvaluate {
         // The prod flavor never has :debugtool (dev / qa have it on purpose), in either build type.
