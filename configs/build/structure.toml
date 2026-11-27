@@ -167,3 +167,9 @@ reason = ":debugtool must not depend on :business or :feature"
 from = [":ui:translation"]
 to = ["**"]
 reason = ":ui:translation chỉ chứa resource, không phụ thuộc module nào"
+
+# :konsist chỉ đọc source dạng file (Konsist), không cần và không được phụ thuộc module nào.
+[[rules]]
+from = [":konsist"]
+to = ["**"]
+reason = ":konsist đọc source dạng file, không phụ thuộc module nào"

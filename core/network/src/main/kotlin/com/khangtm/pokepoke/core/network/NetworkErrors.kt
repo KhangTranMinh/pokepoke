@@ -11,7 +11,7 @@ private const val HTTP_NOT_FOUND = 404
 /**
  * Use in a Repository that calls Retrofit: `dataResultOf(Throwable::toNetworkDataError) { api.xxx() }`.
  *
- * - [HttpException] 404 → `NotFound`; other codes → `Network.Http(code)`
+ * - [HttpException] 404 → `NotFound`; other codes → `Network.Http(code)` (`serverMessage` stays null: the error body is not parsed yet)
  * - [SocketTimeoutException] → `Network.Timeout`; other [IOException] → `Network.NoConnection`
  * - [SerializationException], [IllegalArgumentException] → `Network.Parse(e)`
  * - anything else → `Unexpected(e)`

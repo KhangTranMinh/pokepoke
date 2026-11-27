@@ -16,6 +16,7 @@ coil = "3.6.3"
 
 # Test
 espresso = "3.7.0"
+konsist = "0.18.1"
 
 [libraries]
 # AndroidX
@@ -32,3 +33,4 @@ coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp"
 
 # Test
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+konsist = { group = "com.lemonappdev", name = "konsist", version.ref = "konsist" }

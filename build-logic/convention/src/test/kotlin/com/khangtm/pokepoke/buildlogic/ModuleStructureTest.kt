@@ -95,7 +95,7 @@ class ModuleStructureTest {
         assertEquals(listOf(":core:testing"), structure.libraryTestImplementation)
         assertEquals(":debugtool", structure.appDebugTool)
         assertEquals(70, structure.koverMinLineCoverage)
-        assertEquals(5, structure.rules.size)
+        assertEquals(6, structure.rules.size)
     }
 
     @Test

@@ -114,7 +114,7 @@
   - Tạm thêm `implementation(projects.ui.translation)` vào `:core:network`: `verifyModuleDependencies` fail kèm `reason` từ `structure.toml`. Hoàn lại.
   - Tạm thêm `implementation(projects.ui.common)` vào `:business:data`: fail tương tự. Hoàn lại.
   - `verifyRoborazziDebug` xanh, không có ảnh diff.
-- [ ] **T15e — `UiText` (text không phụ thuộc nguồn) + test kiến trúc Konsist (task chèn thêm).** Đọc designsystem.md §2; contracts.md §1 (`DataError`, `AppError`), §network (`toNetworkDataError`); layers.md §1, §5; build.md §1, §1.1, §1.4, §5; plan.md §4; CLAUDE.md (Layer). Mục tiêu: ViewModel không biết `Context`; View hiển thị text như nhau dù từ `strings.xml` hay server.
+- [x] **T15e — `UiText` (text không phụ thuộc nguồn) + test kiến trúc Konsist (task chèn thêm).** Đọc designsystem.md §2; contracts.md §1 (`DataError`, `AppError`), §network (`toNetworkDataError`); layers.md §1, §5; build.md §1, §1.1, §1.4, §5; plan.md §4; CLAUDE.md (Layer). Mục tiêu: ViewModel không biết `Context`; View hiển thị text như nhau dù từ `strings.xml` hay server.
   1. **`UiText`** (`:ui:common`, đúng chữ ký designsystem.md §2):
      - `sealed interface UiText { Raw; Res }` và `@Composable fun UiText.asString()`. Phần tử `args` là `UiText` thì resolve lồng nhau.
      - `UiMessage(text: UiText, id)` và constructor phụ `UiMessage(@StringRes textRes, args)`. `MessageEffect` dùng `asString()`.

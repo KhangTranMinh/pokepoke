@@ -12,7 +12,7 @@ sealed interface AppError {
     data object NotFound : AppError
 
     /** HTTP status other than 2xx and 404. */
-    data class Server(val code: Int) : AppError
+    data class Server(val code: Int, val serverMessage: String? = null) : AppError
 
     /** Parse error, storage error, anything else. */
     data class Unknown(val cause: Throwable? = null) : AppError
@@ -27,7 +27,7 @@ sealed interface AppResult<out T> {
 fun DataError.toAppError(): AppError = when (this) {
     DataError.Network.NoConnection, DataError.Network.Timeout -> AppError.NoConnection
     DataError.NotFound -> AppError.NotFound
-    is DataError.Network.Http -> AppError.Server(code)
+    is DataError.Network.Http -> AppError.Server(code, serverMessage)
     is DataError.Network.Parse -> AppError.Unknown(cause)
     is DataError.Local.Read -> AppError.Unknown(cause)
     is DataError.Local.Write -> AppError.Unknown(cause)

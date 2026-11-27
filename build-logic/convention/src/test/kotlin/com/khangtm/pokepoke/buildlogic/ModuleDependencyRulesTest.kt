@@ -92,6 +92,12 @@ class ModuleDependencyRulesTest {
     }
 
     @Test
+    fun `konsist must not depend on any module`() {
+        assertEquals(2, violations(":konsist", ":core:common-kotlin", ":feature:home:impl").size)
+        assertTrue(violations(":konsist").isEmpty())
+    }
+
+    @Test
     fun `ui feature app and debugtool may depend on translation`() {
         listOf(":app", ":ui:common", ":ui:designsystem", ":feature:home:impl", ":debugtool").forEach {
             assertTrue(it, violations(it, ":ui:translation").isEmpty())

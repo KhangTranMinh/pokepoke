@@ -37,6 +37,7 @@ class NetworkErrorsTest {
     @Test
     fun `other HTTP codes carry the code`() {
         assertEquals(DataError.Network.Http(500), http(500).toNetworkDataError())
+        assertEquals(null, (http(500).toNetworkDataError() as DataError.Network.Http).serverMessage)
         assertEquals(DataError.Network.Http(401), http(401).toNetworkDataError())
         assertEquals(DataError.Network.Http(429), http(429).toNetworkDataError())
     }

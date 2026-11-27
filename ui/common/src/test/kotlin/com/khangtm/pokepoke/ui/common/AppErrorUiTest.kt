@@ -22,17 +22,41 @@ class AppErrorUiTest {
     }
 
     @Test
-    fun `toUiMessage uses the message resource without args`() {
-        val message = AppError.NoConnection.toUiMessage()
-        assertEquals(R.string.ui_error_no_connection_message, message.textRes)
-        assertEquals(emptyList<Any>(), message.args)
+    fun `titleText wraps the title resource`() {
+        assertEquals(UiText.Res(R.string.ui_error_no_connection_title), AppError.NoConnection.titleText())
+        assertEquals(UiText.Res(R.string.ui_error_server_title), AppError.Server(500, "Maintenance").titleText())
     }
 
     @Test
-    fun `toUiMessage passes the code of a Server error as argument`() {
-        val message = AppError.Server(503).toUiMessage()
-        assertEquals(R.string.ui_error_server_message, message.textRes)
-        assertEquals(listOf<Any>(503), message.args)
+    fun `messageText of Server without serverMessage passes the code`() {
+        assertEquals(UiText.Res(R.string.ui_error_server_message, listOf(503)), AppError.Server(503).messageText())
+    }
+
+    @Test
+    fun `messageText of Server with serverMessage is that message`() {
+        assertEquals(UiText.Raw("Maintenance"), AppError.Server(500, "Maintenance").messageText())
+    }
+
+    @Test
+    fun `messageText of the other errors is the message resource without args`() {
+        assertEquals(UiText.Res(R.string.ui_error_no_connection_message), AppError.NoConnection.messageText())
+        assertEquals(UiText.Res(R.string.ui_error_not_found_message), AppError.NotFound.messageText())
+        assertEquals(UiText.Res(R.string.ui_error_unknown_message), AppError.Unknown().messageText())
+    }
+
+    @Test
+    fun `toUiMessage wraps messageText`() {
+        assertEquals(AppError.NoConnection.messageText(), AppError.NoConnection.toUiMessage().text)
+        assertEquals(UiText.Raw("Maintenance"), AppError.Server(500, "Maintenance").toUiMessage().text)
+        assertEquals(
+            UiText.Res(R.string.ui_error_server_message, listOf(503)),
+            AppError.Server(503).toUiMessage().text,
+        )
+    }
+
+    @Test
+    fun `UiMessage secondary constructor builds a Res text`() {
+        assertEquals(UiMessage(UiText.Res(R.string.ui_retry, listOf(1)), id = 3), UiMessage(R.string.ui_retry, listOf(1), id = 3))
     }
 
     @Test
