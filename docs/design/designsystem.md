@@ -104,16 +104,18 @@ Package `com.khangtm.pokepoke.ui.common` (trước T15d: `:core:ui` / `core.ui`)
 |---|---|---|
 | `RemoteImage` | `(url: String?, contentDescription: String?, modifier, contentScale = ContentScale.Fit)` | Coil `AsyncImage`; khi loading: nền `surfaceContainerHigh`; lỗi / url null: icon `PokeIcons.Pokeball` màu `outline` ở giữa |
 | `LoadingState` | `(modifier)` | `CircularProgressIndicator` ở giữa, chiếm hết vùng |
-| `ErrorState` | `(error: AppError, onRetry: () -> Unit, modifier)` | icon (`CloudOff` cho `NoConnection`, `Pokeball` cho lỗi khác) + tiêu đề + mô tả theo `error` (bảng dưới) + `PokeSecondaryButton(R.string.ui_retry)` |
+| `ErrorState` | `(error: AppError, onRetry: () -> Unit, modifier)` | icon (`CloudOff` cho `NoConnection`, `Pokeball` cho lỗi khác) + tiêu đề + mô tả theo `error` (`titleText()` / `messageText()`, bảng dưới) + `PokeSecondaryButton(R.string.ui_retry)` |
 | `EmptyState` | `(title: String, modifier, message: String? = null, icon: ImageVector? = null, actionText: String? = null, onAction: (() -> Unit)? = null)` | dùng cho rỗng, cần đăng nhập, placeholder pane detail |
 | `OfflineBanner` | `(modifier)` | hàng full width nền `tertiaryContainer`, icon CloudOff + `R.string.ui_offline_banner` |
 | `LoadMoreFooter` | `(state: LoadMoreState, onRetry: () -> Unit, modifier)` | `Loading` → progress nhỏ; `Error` → text lỗi + nút retry; `Idle`/`EndReached` → không hiển thị gì |
 | `LoadMoreState` | `sealed interface { Idle; Loading; data class Error(val error: AppError); EndReached }` | |
 | `MediaCard` | `(title: String, overline: String, imageUrl: String?, onClick: () -> Unit, modifier, action: (@Composable () -> Unit)? = null)` | `PokeCard`: ảnh vuông `cardImage` ở giữa trên, `overline` (labelMedium, onSurfaceVariant), `title` (titleMedium); `action` ở góc trên phải |
-| `UiMessage` | `data class UiMessage(@StringRes val textRes: Int, val args: List<Any> = emptyList(), val id: Long = System.nanoTime())` | sự kiện một lần trong UiState |
-| `MessageEffect` | `(message: UiMessage?, snackbarHostState: SnackbarHostState, onShown: () -> Unit)` | `LaunchedEffect(message?.id)`: show snackbar rồi gọi `onShown` |
-| `AppError.titleRes()` / `messageRes()` | extension `@StringRes` | |
-| `AppError.toUiMessage()` | `fun AppError.toUiMessage(): UiMessage` | `UiMessage(messageRes(), args)`; `Server` truyền `code` làm arg |
+| `UiText` | `sealed interface UiText { data class Raw(val value: String); data class Res(@StringRes val id: Int, val args: List<Any> = emptyList()) }` | Text **chưa resolve** — ViewModel / UiState dùng mà không cần `Context` (T15e). `Raw` = text có sẵn (server, dữ liệu); `Res` = string resource, phần tử `args` là `UiText` thì được resolve lồng nhau. View không phân biệt hai loại |
+| `UiText.asString()` | `@Composable fun UiText.asString(): String` | Chỗ **duy nhất** resolve (`stringResource`); Screen gọi rồi truyền `String` cho component |
+| `UiMessage` | `data class UiMessage(val text: UiText, val id: Long = System.nanoTime())` + constructor phụ `UiMessage(@StringRes textRes: Int, args: List<Any> = emptyList())` = `UiMessage(UiText.Res(textRes, args))` | sự kiện một lần trong UiState |
+| `MessageEffect` | `(message: UiMessage?, snackbarHostState: SnackbarHostState, onShown: () -> Unit)` | `LaunchedEffect(message?.id)`: show snackbar (`message.text.asString()`) rồi gọi `onShown` |
+| `AppError.titleText()` / `messageText()` | extension trả `UiText` | `titleText()` = `Res(title)`; `messageText()` = `Server` có `serverMessage` → `Raw(serverMessage)`, còn lại `Res(message, args)` (bảng dưới; `Server` truyền `code` làm arg). Thay `titleRes()` / `messageRes()` (giữ hai hàm này `internal`) |
+| `AppError.toUiMessage()` | `fun AppError.toUiMessage(): UiMessage` | `UiMessage(messageText())` |
 | `LoadState<T>` | `sealed interface { data object Loading; data class Content<T>(val data: T, val isOffline: Boolean); data class Error(val error: AppError) }` | trạng thái hiển thị của dữ liệu tải theo network-first |
 | `toLoadState()` | `fun <T> AppResult<DataSnapshot<T>>.toLoadState(): LoadState<T>` | `Success(s)` → `Content(s.value, s.isOffline)`; `Failure(e)` → `Error(e)` |
 

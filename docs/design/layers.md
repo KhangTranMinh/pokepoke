@@ -14,7 +14,7 @@ Screen ──UiAction──▶ ViewModel ──▶ UseCase ──▶ Repository 
 | **Data source** | Retrofit `XxxApi`, Room `XxxDao`, `KeyValueStore`, `SecureStorage` (core) | — | DTO / entity / giá trị thô | **được ném** |
 | **Repository** | interface ở `:business:domain`, cài đặt `internal` ở `:business:data`; hoặc `feature:*:impl/data/` (dữ liệu riêng của onboarding, auth) | data source, `NetworkMonitor`, `@IoDispatcher` | `DataResult<T>` / `Flow<DataResult<T>>` | không ném: mọi lời gọi data source bọc `dataResultOf` / `asDataResult` |
 | **UseCase** | `:business:domain` (interface public, `Impl` internal); `feature:*:api` (public) hoặc `feature:*:impl/domain/` (internal, chỉ ghép use case cho riêng màn hình / dữ liệu riêng của feature) | Repository, UseCase khác, `NetworkMonitor`, `AppInfo`, wrapper platform không ném lỗi (vd. `AppLocaleController`), tiện ích thuần (`TokenGenerator`, `Clock`) | `AppResult<T>` / `Flow<AppResult<T>>` | không ném, không `try` |
-| **ViewModel** | `feature:*:impl/presentation/` | **chỉ** UseCase, `Navigator`, tham số `@Assisted` | `StateFlow<UiState>` | không ném, không `try` |
+| **ViewModel** | `feature:*:impl/presentation/` | **chỉ** UseCase, `Navigator`, tham số `@Assisted` — **không** `Context` / `Resources` / `Application` | `StateFlow<UiState>`; text trong UiState là `UiText` / `UiMessage` (designsystem.md §2), resolve ở Compose | không ném, không `try` |
 | **Navigation glue** (interceptor, `DeepLinkHandler`, `EntryProviderInstaller`) | `feature:*:impl/navigation/` | UseCase, `Navigator` | theo contract core | không `try` |
 
 - `CancellationException` luôn được ném lại — chỉ helper trong `core:common-kotlin` (`dataResultOf`, `asDataResult`) bắt exception, nên luật này tự đúng.
@@ -145,15 +145,15 @@ internal class PokemonRepositoryImpl @Inject constructor(        // :business:da
   - UseCase: fake Repository trong testFixtures của `:business:domain` (`FakePokemonRepository`, `FakeFavouriteRepository`), hoặc trong `src/test` của chính module nếu repository là internal của feature.
   - Repository: test với data source thật trong môi trường test (Room in-memory, `MockWebServer`, `FakeKeyValueStore`) và kiểm tra **từng dòng** bảng §2 mà repository đó gặp.
 
-## 5. Checklist review (quy ước bắt buộc, chưa kiểm tra tự động)
+## 5. Checklist review (quy ước bắt buộc)
 
-Không áp dụng cho `:core:*` và `:debugtool`. Trước khi commit mỗi task, tự rà:
+Không áp dụng cho `:core:*` và `:debugtool` (trừ luật 11). Trước khi commit mỗi task, tự rà. Luật đánh dấu 🤖 được test kiến trúc trong module `:konsist` kiểm tra tự động (`./gradlew check`, từ T15e):
 
 | # | Luật |
 |---|---|
 | 1 | Hàm `invoke` của mọi `*UseCase` trả `AppResult<…>` hoặc `Flow<AppResult<…>>`. `SessionCleaner.clear` cũng vậy. |
 | 2 | Mọi hàm không `private` của `*Repository` / `*RepositoryImpl` trả `DataResult<…>` hoặc `Flow<DataResult<…>>`; không có property không `private`. |
-| 3 | Tham số constructor của `*ViewModel` chỉ là `*UseCase`, `Navigator`, hoặc tham số `@Assisted`. |
+| 3 🤖 | Tham số constructor của `*ViewModel` chỉ là `*UseCase`, `Navigator`, hoặc tham số `@Assisted`. |
 | 4 | `*UseCaseImpl` không inject data source (`*Api`, `*Dao`, `*Database`, `KeyValueStore(Factory)`, `SecureStorage(Factory)`). |
 | 5 | Package `presentation`, `domain`, `navigation` không có `catch`; không có `runCatching` ở bất kỳ đâu trong `domain` / `data` / `feature`; module `:business:domain` không có `catch`. |
 | 6 | Hàm trả `Flow` tên bắt đầu `observe` (use case: `Observe…UseCase`) và không `suspend`; hàm one-shot là `suspend`, không trả `Flow`. Lệnh ghi và network luôn one-shot (§1.2). |
@@ -161,5 +161,6 @@ Không áp dụng cho `:core:*` và `:debugtool`. Trước khi commit mỗi task
 | 8 | Kết quả nghiệp vụ là `sealed interface XxxOutcome` nằm trong `Success`; tên trường hợp không chứa `Success` / `Failure` / `Error` / `Ok` (§3). |
 | 9 | `:business:data` không inject use case, không chứa quyết định nghiệp vụ (§1.1); repository interface ở `:business:domain` không có hàm kỹ thuật `save*` / `upsert*`. |
 | 10 | `:business:domain` là Kotlin/JVM thuần (build tự chặn `android.*`); không phụ thuộc thêm thư viện ngoài coroutines, `javax.inject`, `hilt-core`, `core:common-kotlin`. |
+| 11 🤖 | Mọi `*ViewModel` (kể cả `:debugtool`): file không import `android.content.Context`, `android.content.res.Resources`, `android.app.Application`; không kế thừa `AndroidViewModel`; không có tham số `@ApplicationContext`. Text cho UI là `UiText` / `UiMessage`. |
 
-Sau này muốn tự động hóa: các luật trên viết được thành test kiến trúc (vd. Konsist) mà không đổi thiết kế.
+Luật chưa có 🤖 có thể chuyển dần sang `:konsist` (thêm hàm test, không đổi thiết kế).

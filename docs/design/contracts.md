@@ -22,7 +22,7 @@ sealed interface DataError {
     sealed interface Network : DataError {
         data object NoConnection : Network                    // IOException (không phải timeout), NetworkMonitor offline
         data object Timeout : Network                         // SocketTimeoutException
-        data class Http(val code: Int) : Network              // HTTP khác 2xx, khác 404
+        data class Http(val code: Int, val serverMessage: String? = null) : Network  // HTTP khác 2xx, khác 404; serverMessage = message lỗi server trả về (đã đúng ngôn ngữ), hiện luôn null (T15e)
         data class Parse(val cause: Throwable) : Network      // SerializationException, lỗi map DTO → model
     }
     sealed interface Local : DataError {
@@ -53,7 +53,7 @@ inline fun <T, R> DataResult<T>.flatMap(transform: (T) -> DataResult<R>): DataRe
 sealed interface AppError {
     data object NoConnection : AppError          // không có mạng / timeout
     data object NotFound : AppError              // HTTP 404 hoặc không có dữ liệu
-    data class Server(val code: Int) : AppError  // HTTP khác 2xx/404
+    data class Server(val code: Int, val serverMessage: String? = null) : AppError  // HTTP khác 2xx/404; serverMessage từ DataError.Network.Http
     data class Unknown(val cause: Throwable? = null) : AppError  // parse lỗi, lỗi storage, lỗi khác
 }
 
@@ -62,7 +62,7 @@ sealed interface AppResult<out T> {
     data class Failure(val error: AppError) : AppResult<Nothing>
 }
 
-/** Network.NoConnection, Network.Timeout → NoConnection; NotFound → NotFound; Network.Http(c) → Server(c);
+/** Network.NoConnection, Network.Timeout → NoConnection; NotFound → NotFound; Network.Http(c, m) → Server(c, m);
  *  Network.Parse(e), Local.Read(e), Local.Write(e), Unexpected(e) → Unknown(e). */
 fun DataError.toAppError(): AppError
 inline fun <T> DataResult<T>.toAppResult(mapError: (DataError) -> AppError = { it.toAppError() }): AppResult<T>
@@ -139,7 +139,7 @@ inline fun <reified T : Any> ApiServiceFactory.create(): T = create(T::class.jav
 
 /** Dùng trong Repository gọi Retrofit: dataResultOf(Throwable::toNetworkDataError) { api.xxx() }.
  *  SocketTimeoutException → Network.Timeout; IOException khác → Network.NoConnection; HttpException 404 → NotFound;
- *  HttpException khác → Network.Http(code); SerializationException, IllegalArgumentException → Network.Parse(e); còn lại → Unexpected(e). */
+ *  HttpException khác → Network.Http(code) (serverMessage = null: chưa parse body lỗi — khi có server thật, `:app` cấp parser, thiết kế lúc đó); SerializationException, IllegalArgumentException → Network.Parse(e); còn lại → Unexpected(e). */
 fun Throwable.toNetworkDataError(): DataError
 ```
 
