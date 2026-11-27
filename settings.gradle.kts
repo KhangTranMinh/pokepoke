@@ -68,4 +68,5 @@ include(
     ":ui:common",
     ":ui:translation",
     ":debugtool",
+    ":konsist",
 )

@@ -65,12 +65,12 @@ fun ErrorState(
                 tint = MaterialTheme.colorScheme.outline,
             )
             Text(
-                text = stringResource(error.titleRes()),
+                text = error.titleText().asString(),
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
             )
             Text(
-                text = stringResource(error.messageRes(), *error.messageArgs().toTypedArray()),
+                text = error.messageText().asString(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

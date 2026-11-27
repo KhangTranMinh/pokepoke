@@ -17,8 +17,8 @@ sealed interface DataError {
         /** SocketTimeoutException. */
         data object Timeout : Network
 
-        /** HTTP status other than 2xx and 404. */
-        data class Http(val code: Int) : Network
+        /** HTTP status other than 2xx and 404. [serverMessage] is the message from the server's error body, if parsed. */
+        data class Http(val code: Int, val serverMessage: String? = null) : Network
 
         /** SerializationException, or a DTO → model mapping failure. */
         data class Parse(val cause: Throwable) : Network

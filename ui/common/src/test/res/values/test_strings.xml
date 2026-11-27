@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only for UiTextTest-style checks: a string that takes another string as argument. -->
+    <string name="test_greeting">Hello, %1$s!</string>
+</resources>

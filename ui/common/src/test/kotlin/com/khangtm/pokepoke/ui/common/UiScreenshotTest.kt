@@ -41,6 +41,11 @@ class UiScreenshotTest {
     }
 
     @Test
+    fun errorStateServerMessage() = runComposeScreenshotLightDark("error_state_server_message") { dark ->
+        PokeTheme(dark) { ErrorStateSample(AppError.Server(500, "Maintenance")) }
+    }
+
+    @Test
     fun errorStateUnknown() = runComposeScreenshotLightDark("error_state_unknown") { dark ->
         PokeTheme(dark) { ErrorStateSample(AppError.Unknown()) }
     }

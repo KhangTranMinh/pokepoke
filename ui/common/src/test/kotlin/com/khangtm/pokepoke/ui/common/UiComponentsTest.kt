@@ -2,6 +2,7 @@ package com.khangtm.pokepoke.ui.common
 
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
 import com.khangtm.pokepoke.core.common.AppError
+import com.khangtm.pokepoke.ui.common.test.R as TestR
 import com.khangtm.pokepoke.ui.designsystem.PokeTheme
 import com.khangtm.pokepoke.ui.translation.R
 import org.junit.Assert.assertEquals
@@ -163,6 +165,34 @@ class UiComponentsTest {
         assertEquals(1, clicks)
         onNodeWithText("action").performClick()
         assertEquals(1, actions)
+    }
+
+    // ---- UiText ----
+
+    @Test
+    fun `asString resolves Raw as it is`() = runComposeUiTest {
+        setContent { Text(UiText.Raw("From server").asString()) }
+        onNodeWithText("From server").assertIsDisplayed()
+    }
+
+    @Test
+    fun `asString resolves Res with args`() = runComposeUiTest {
+        setContent { Text(UiText.Res(R.string.ui_error_server_message, listOf(500)).asString()) }
+        onNodeWithText(string(R.string.ui_error_server_message, 500)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `asString resolves a UiText arg inside Res`() = runComposeUiTest {
+        setContent {
+            Text(UiText.Res(TestR.string.test_greeting, listOf(UiText.Raw("Pikachu"))).asString())
+        }
+        onNodeWithText("Hello, Pikachu!").assertIsDisplayed()
+    }
+
+    @Test
+    fun `ErrorState shows the server message when present`() = runComposeUiTest {
+        setContent { PokeTheme { ErrorState(error = AppError.Server(500, "Maintenance"), onRetry = {}) } }
+        onNodeWithText("Maintenance").assertIsDisplayed()
     }
 
     // ---- MessageEffect ----

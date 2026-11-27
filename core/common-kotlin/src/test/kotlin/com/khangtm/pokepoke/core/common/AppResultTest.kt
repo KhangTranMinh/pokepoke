@@ -18,6 +18,7 @@ class AppResultTest {
         assertEquals(AppError.NoConnection, DataError.Network.Timeout.toAppError())
         assertEquals(AppError.NotFound, DataError.NotFound.toAppError())
         assertEquals(AppError.Server(500), DataError.Network.Http(500).toAppError())
+        assertEquals(AppError.Server(500, "Maintenance"), DataError.Network.Http(500, "Maintenance").toAppError())
         assertEquals(AppError.Unknown(cause), DataError.Network.Parse(cause).toAppError())
         assertEquals(AppError.Unknown(cause), DataError.Local.Read(cause).toAppError())
         assertEquals(AppError.Unknown(cause), DataError.Local.Write(cause).toAppError())
