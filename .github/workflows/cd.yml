@@ -1,4 +1,4 @@
-name: CD
+name: CD · Firebase App Distribution
 
 # Phát APK qaRelease / prodRelease cho tester qua Firebase App Distribution. Xem docs/design/build.md §12.
 # Không chạy trên pull_request (secret không lộ cho code chưa review). CD không bị CI_SKIP (chỉ có trong ci.yml) ảnh hưởng.
