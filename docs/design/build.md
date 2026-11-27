@@ -419,7 +419,7 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 
 ## 10. CI (GitHub Actions) & bảo vệ `main`
 
-**Workflow `.github/workflows/ci.yml`** — job `build` (tên check bắt buộc trong ruleset):
+**Workflow `.github/workflows/ci.yml`** (tên hiển thị *CI · Build & Test*; tên workflow đổi thoải mái, chỉ tên **job** `build` là check bắt buộc) — job `build` (tên check bắt buộc trong ruleset):
 - Chạy khi: `pull_request` vào `main`, `push` lên `main`; `concurrency` theo ref, hủy run cũ (`cancel-in-progress`).
 - Runner **`macos-latest`**: ảnh Roborazzi được ghi trên macOS; Robolectric render font trên Linux khác → `verifyRoborazziDebug` sẽ fail giả trên Ubuntu. Repo public nên runner macOS miễn phí.
 - Bước: `actions/checkout` → `actions/setup-java` (Temurin 21) → `gradle/actions/setup-gradle` (cache; chỉ ghi cache ở `main`) → lệnh "Giống CI" ở mục 9 → khi fail: upload artifact `**/build/reports/**`, `**/build/test-results/**`, ảnh diff Roborazzi (`**/build/outputs/roborazzi/**`).
@@ -587,7 +587,7 @@ Hai Firebase project, mỗi môi trường một project. Prod tách khỏi qa: 
    - ✅ Tạo `qa` và `prod`, thêm secret theo bảng 12.3.
    - `prod`: bật Required reviewers và giới hạn tag `v*`.
 6. **Xoá file key JSON ở máy** sau khi đã dán vào secret.
-7. **Chạy thử:** tạo `release/v1.0.0` từ `main` (§12.5; `version.properties` phải là 1.0.0), rồi Actions → CD → *Run workflow* → branch `release/v1.0.0`, `env = qa`; hoặc merge một PR bump version vào branch đó. Tester nhận email mời và cài bằng app *Firebase App Tester*.
+7. **Chạy thử:** tạo `release/v1.0.0` từ `main` (§12.5; `version.properties` phải là 1.0.0), rồi Actions → *CD · Firebase App Distribution* → *Run workflow* → branch `release/v1.0.0`, `env = qa`; hoặc merge một PR bump version vào branch đó. Tester nhận email mời và cài bằng app *Firebase App Tester*.
 
 ### 12.5. Quy trình release (mỗi version một branch `release/vX.Y.Z`)
 
@@ -613,7 +613,7 @@ Luồng của user:
 | **Cắt release** (mới hoặc hotfix) | tạo `release/vX.Y.Z` ở máy, commit sửa version, `git push -u origin release/vX.Y.Z` | user | — |
 | **Fix bug của bản release** | branch `fix/<slug>` từ `release/vX.Y.Z`, PR vào `release/vX.Y.Z` (1 commit, như task) | agent | — |
 | **Bump version** (PR đổi `version.properties`) | branch `bump/vX.Y.Z-<versionCode>` từ `release/vX.Y.Z`, chỉ sửa `version.properties` (`versionName` / `versionCode` sửa tay); PR vào `release/vX.Y.Z`. Lệch tên branch thì build qa fail | agent hoặc user | qa |
-| **Build tay** | Actions → CD → *Run workflow*, chọn branch `release/vX.Y.Z`, `env = qa` | user | qa |
+| **Build tay** | Actions → *CD · Firebase App Distribution* → *Run workflow*, chọn branch `release/vX.Y.Z`, `env = qa` | user | qa |
 | **Phát prod** | `git tag vX.Y.Z <commit trên release/vX.Y.Z> && git push origin vX.Y.Z` | user | prod |
 | **Đưa fix về `main`** (lúc nào cũng được, nên làm sớm để ít conflict) | branch `merge/release-vX.Y.Z-<ngày>` tạo từ `release/vX.Y.Z` rồi `git merge origin/main` (giải conflict ở đây); PR vào `main` | agent hoặc user | — |
 
