@@ -1,8 +1,8 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.hilt)
-    alias(libs.plugins.pokepoke.room)
-    alias(libs.plugins.pokepoke.kotlin.serialization)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.room)
+    alias(pokepoke.plugins.pokepoke.kotlin.serialization)
 }
 
 android {
@@ -15,7 +15,7 @@ dependencies {
     implementation(projects.core.commonKotlin)
     implementation(projects.core.network)
     implementation(projects.core.connectivity)
-    implementation(libs.kotlinx.coroutines.core)
+    implementation(pokepoke.kotlinx.coroutines.core)
 
     testImplementation(testFixtures(projects.business.domain))
     testImplementation(testFixtures(projects.core.network))

@@ -6,8 +6,8 @@ dependencyResolutionManagement {
         gradlePluginPortal()
     }
     versionCatalogs {
-        create("libs") {
-            from(files("../gradle/libs.versions.toml"))
+        create("pokepoke") {
+            from(files("../gradle/pokepoke.versions.toml"))
         }
     }
 }

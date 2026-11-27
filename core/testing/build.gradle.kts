@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.android.compose)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.android.compose)
 }
 
 android {
@@ -8,13 +8,13 @@ android {
 }
 
 dependencies {
-    api(platform(libs.androidx.compose.bom))
+    api(platform(pokepoke.androidx.compose.bom))
     api(projects.core.commonKotlin)
-    api(libs.junit)
-    api(libs.kotlinx.coroutines.test)
-    api(libs.androidx.compose.ui.test.junit4)
-    api(libs.roborazzi)
-    api(libs.roborazzi.compose)
-    api(libs.roborazzi.junit.rule)
-    api(libs.robolectric)
+    api(pokepoke.junit)
+    api(pokepoke.kotlinx.coroutines.test)
+    api(pokepoke.androidx.compose.ui.test.junit4)
+    api(pokepoke.roborazzi)
+    api(pokepoke.roborazzi.compose)
+    api(pokepoke.roborazzi.junit.rule)
+    api(pokepoke.robolectric)
 }

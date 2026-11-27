@@ -1,7 +1,7 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.android.compose)
-    alias(libs.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.android.compose)
+    alias(pokepoke.plugins.pokepoke.hilt)
 }
 
 android {
@@ -17,7 +17,7 @@ dependencies {
     implementation(projects.core.securestorage.api)
     implementation(libs.androidx.startup)
     implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(pokepoke.androidx.lifecycle.runtime.compose)
+    implementation(pokepoke.androidx.lifecycle.viewmodel.compose)
+    implementation(pokepoke.androidx.hilt.lifecycle.viewmodel.compose)
 }

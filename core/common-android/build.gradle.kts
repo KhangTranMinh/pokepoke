@@ -1,6 +1,6 @@
 plugins {
-    alias(libs.plugins.pokepoke.android.library)
-    alias(libs.plugins.pokepoke.hilt)
+    alias(pokepoke.plugins.pokepoke.android.library)
+    alias(pokepoke.plugins.pokepoke.hilt)
 }
 
 android {
@@ -9,5 +9,5 @@ android {
 
 dependencies {
     implementation(projects.core.commonKotlin)
-    implementation(libs.kotlinx.coroutines.android)
+    implementation(pokepoke.kotlinx.coroutines.android)
 }
