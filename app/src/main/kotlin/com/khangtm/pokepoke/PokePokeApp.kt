@@ -9,7 +9,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import com.khangtm.pokepoke.core.designsystem.PokeTheme
+import com.khangtm.pokepoke.ui.designsystem.PokeTheme
 import com.khangtm.pokepoke.core.navigation.EntryProviderInstaller
 import com.khangtm.pokepoke.core.navigation.Navigator
 import com.khangtm.pokepoke.core.navigation.TopLevelDestination

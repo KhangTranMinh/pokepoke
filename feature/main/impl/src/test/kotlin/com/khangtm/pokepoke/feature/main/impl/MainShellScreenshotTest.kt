@@ -1,6 +1,6 @@
 package com.khangtm.pokepoke.feature.main.impl
 
-import com.khangtm.pokepoke.core.designsystem.PokeTheme
+import com.khangtm.pokepoke.ui.designsystem.PokeTheme
 import com.khangtm.pokepoke.core.navigation.FakeNavigator
 import com.khangtm.pokepoke.core.testing.ScreenshotDevices
 import com.khangtm.pokepoke.core.testing.runComposeScreenshotLightDark

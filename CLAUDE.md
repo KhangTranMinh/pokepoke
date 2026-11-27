@@ -37,7 +37,7 @@
 ## Quy ước code
 
 - Package = namespace module: `com.khangtm.pokepoke.<core|ui|business|feature>.<name>[.api|.impl]` (vd. `:ui:translation` → `com.khangtm.pokepoke.ui.translation`); `:app` → `com.khangtm.pokepoke`; `:debugtool` → `com.khangtm.pokepoke.debugtool`.
-- **Nhóm module** (`docs/design/build.md` §11): `:core:*` = hạ tầng **dùng chung, sẽ publish** — chỉ phụ thuộc `:core:*`, thư viện ngoài chỉ lấy từ catalog `pokepoke` (không `libs.*`), không string / resource riêng của app; `:ui:*` = UI riêng của app (`designsystem`, `common`, `translation`); `:business:*`, `:feature:*`, `:app`, `:debugtool`.
+- **Nhóm module** (`docs/design/build.md` §11): `:core:*` = hạ tầng **dùng chung, sẽ publish** — chỉ phụ thuộc `:core:*`, thư viện ngoài chỉ lấy từ catalog `pokepoke` / `coreLibs` (không `libs.*`), không string / resource riêng của app; `:ui:*` = UI riêng của app (`designsystem`, `common`, `translation`); `:business:*`, `:feature:*`, `:app`, `:debugtool`.
 - Kotlin source ở `src/main/kotlin`, test ở `src/test/kotlin`.
 - Chỉ `:app` được phụ thuộc module `:impl`, `:business:data` và `:debugtool` (build tự kiểm tra).
 - Đường dẫn module trong `build-logic` (dependency tự thêm, luật kiến trúc, ngưỡng Kover, debugtool) **không hardcode**: khai báo ở `configs/build/structure.toml` (`docs/design/build.md` §3a). Thêm module / luật mới → sửa file này.

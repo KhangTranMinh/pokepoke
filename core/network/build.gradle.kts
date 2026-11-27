@@ -12,9 +12,9 @@ android {
 dependencies {
     api(projects.core.commonKotlin)
     // Features declare Retrofit services (@GET...) and :debugtool writes OkHttp interceptors.
-    api(libs.retrofit)
-    api(libs.okhttp)
-    implementation(libs.retrofit.converter.kotlinx.serialization)
+    api(coreLibs.retrofit)
+    api(coreLibs.okhttp)
+    implementation(coreLibs.retrofit.converter.kotlinx.serialization)
     testFixturesImplementation(pokepoke.kotlinx.serialization.json)
-    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(coreLibs.okhttp.mockwebserver)
 }

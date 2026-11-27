@@ -2,7 +2,7 @@ package com.khangtm.pokepoke.core.network
 
 import javax.inject.Qualifier
 
-/** Base URL of the API, provided by `:app`: `@Provides @BaseUrl fun baseUrl(): String = "https://pokeapi.co/api/v2/"`. */
+/** Base URL of the API, provided by `:app` from `BuildConfig.BASE_URL` (per flavor, set in `configs/env/config.toml`); never hardcoded. */
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class BaseUrl

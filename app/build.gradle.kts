@@ -15,10 +15,10 @@ android {
 
 dependencies {
     implementation(projects.core.commonKotlin)
-    implementation(projects.translation)
+    implementation(projects.ui.translation)
     implementation(projects.core.commonAndroid)
-    implementation(projects.core.designsystem)
-    implementation(projects.core.ui)
+    implementation(projects.ui.designsystem)
+    implementation(projects.ui.common)
     implementation(projects.core.network)
     implementation(projects.core.connectivity)
     implementation(projects.core.storage.api)

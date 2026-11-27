@@ -6,7 +6,10 @@ import com.khangtm.pokepoke.core.navigation.NavRequest
 /** Normalized link: `pokepoke://pokemon/25` and `https://pokepoke.com/pokemon/25` both give segments `["pokemon","25"]`. */
 data class DeepLink(val segments: List<String>, val query: Map<String, String>)
 
-/** Provided by `:app`: `DeepLinkConfig(schemes = setOf("pokepoke"), hosts = setOf("pokepoke.com"))`. */
+/**
+ * Provided by `:app`, built from `BuildConfig.DEEPLINK_SCHEME` / `BuildConfig.DEEPLINK_HOST` (per flavor, `configs/env/config.toml`):
+ * `DeepLinkConfig(schemes = setOf(BuildConfig.DEEPLINK_SCHEME), hosts = setOf(BuildConfig.DEEPLINK_HOST))`.
+ */
 data class DeepLinkConfig(val schemes: Set<String>, val hosts: Set<String>)
 
 /** A feature registers one (Hilt `@IntoSet`). Returns null when the link does not match. */

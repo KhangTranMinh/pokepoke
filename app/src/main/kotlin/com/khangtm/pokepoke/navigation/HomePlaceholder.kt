@@ -10,7 +10,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.navigation3.runtime.NavKey
 import com.khangtm.pokepoke.core.navigation.EntryProviderInstaller
 import com.khangtm.pokepoke.feature.home.api.HomeNavKey
-import com.khangtm.pokepoke.translation.R
+import com.khangtm.pokepoke.ui.translation.R
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

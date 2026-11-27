@@ -11,8 +11,8 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
-import com.khangtm.pokepoke.core.designsystem.PokeTheme
-import com.khangtm.pokepoke.translation.R
+import com.khangtm.pokepoke.ui.designsystem.PokeTheme
+import com.khangtm.pokepoke.ui.translation.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

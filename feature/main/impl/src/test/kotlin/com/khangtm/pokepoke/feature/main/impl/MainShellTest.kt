@@ -11,10 +11,10 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.test.assertCountEquals
 import androidx.test.core.app.ApplicationProvider
-import com.khangtm.pokepoke.core.designsystem.PokeTheme
+import com.khangtm.pokepoke.ui.designsystem.PokeTheme
 import com.khangtm.pokepoke.core.navigation.FakeNavigator
 import com.khangtm.pokepoke.core.navigation.NavRequest
-import com.khangtm.pokepoke.translation.R
+import com.khangtm.pokepoke.ui.translation.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

@@ -9,13 +9,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.test.core.app.ApplicationProvider
-import com.khangtm.pokepoke.core.designsystem.PokeIcons
+import com.khangtm.pokepoke.ui.designsystem.PokeIcons
 import com.khangtm.pokepoke.core.navigation.FakeNavigator
 import com.khangtm.pokepoke.core.navigation.NavRequest
 import com.khangtm.pokepoke.core.navigation.TopLevelDestination
 import com.khangtm.pokepoke.feature.home.api.HomeNavKey
 import com.khangtm.pokepoke.navigation.HomePlaceholderInstaller
-import com.khangtm.pokepoke.translation.R
+import com.khangtm.pokepoke.ui.translation.R
 import androidx.navigation3.runtime.NavKey
 import org.junit.Assert.assertEquals
 import org.junit.Test

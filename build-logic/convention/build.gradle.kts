@@ -39,6 +39,7 @@ tasks.test {
     inputs.files(
         repoRoot.file("gradle/pokepoke.versions.toml"),
         repoRoot.file("gradle/libs.versions.toml"),
+        repoRoot.file("gradle/core.versions.toml"),
         repoRoot.file("configs/build/structure.toml"),
         repoRoot.file("settings.gradle.kts"),
     ).withPropertyName("repoFiles").withPathSensitivity(PathSensitivity.RELATIVE)

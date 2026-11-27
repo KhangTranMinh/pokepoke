@@ -34,12 +34,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.khangtm.pokepoke.core.designsystem.PokeIcons
-import com.khangtm.pokepoke.core.designsystem.PokePrimaryButton
-import com.khangtm.pokepoke.core.designsystem.PokeSizes
-import com.khangtm.pokepoke.core.designsystem.PokeSpacing
-import com.khangtm.pokepoke.core.designsystem.PokeTextButton
-import com.khangtm.pokepoke.translation.R
+import com.khangtm.pokepoke.ui.designsystem.PokeIcons
+import com.khangtm.pokepoke.ui.designsystem.PokePrimaryButton
+import com.khangtm.pokepoke.ui.designsystem.PokeSizes
+import com.khangtm.pokepoke.ui.designsystem.PokeSpacing
+import com.khangtm.pokepoke.ui.designsystem.PokeTextButton
+import com.khangtm.pokepoke.ui.translation.R
 
 private val IllustrationCircleSize = 200.dp
 private val IllustrationIconSize = 120.dp

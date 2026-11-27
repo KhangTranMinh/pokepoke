@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     api(pokepoke.kotlinx.coroutines.core)
-    api(libs.javax.inject)
+    api(coreLibs.javax.inject)
 }

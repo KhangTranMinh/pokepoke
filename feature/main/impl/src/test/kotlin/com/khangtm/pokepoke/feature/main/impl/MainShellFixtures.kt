@@ -9,11 +9,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.runtime.NavKey
-import com.khangtm.pokepoke.core.designsystem.PokeIcons
+import com.khangtm.pokepoke.ui.designsystem.PokeIcons
 import com.khangtm.pokepoke.core.navigation.FullScreen
 import com.khangtm.pokepoke.core.navigation.Navigator
 import com.khangtm.pokepoke.core.navigation.TopLevelDestination
-import com.khangtm.pokepoke.translation.R
+import com.khangtm.pokepoke.ui.translation.R
 
 data object HomeKey : NavKey
 data object FavouriteKey : NavKey

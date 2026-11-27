@@ -123,21 +123,24 @@ AGP 9 có Kotlin tích hợp sẵn (built-in Kotlin) với KGP đi kèm. Compose
 4. Nếu API của một thư viện khác với mô tả trong docs (vd. Navigation 3, Material3 Adaptive): **theo API thật của version đã pin** (đọc sources jar / KDoc), giữ nguyên ý nghĩa thiết kế.
 5. Ghi mọi thay đổi version / lệch API vào [`docs/decisions.md`](../decisions.md).
 
-### 1.4. Hai version catalog: `pokepoke` (nền tảng: build-logic + core) và `libs` (app)
+### 1.4. Ba version catalog: `pokepoke` (build-logic), `coreLibs` (core) và `libs` (app)
 
-Bảng version ở §1 / §1.1 / §1.2 vẫn là nguồn chuẩn cho **giá trị** version; T15c chia chúng vào hai file đồng cấp:
+Bảng version ở §1 / §1.1 / §1.2 vẫn là nguồn chuẩn cho **giá trị** version; T15c / T15d chia chúng vào ba file đồng cấp:
 
 | File | Catalog | Chứa | Ai dùng |
 |---|---|---|---|
-| `gradle/pokepoke.versions.toml` | `pokepoke` | Mọi thứ `build-logic` đọc hoặc tự thêm: version SDK / JVM (`compileSdk`, `compileSdkMinor`, `minSdk`, `targetSdk`, `jvm`); artifact Gradle plugin (AGP, KGP, compose compiler, KSP, Hilt, Room, Kover, Roborazzi) + `[plugins]` tương ứng + alias convention plugin `pokepoke-*`; thư viện plugin tự thêm (Compose BOM + ui / foundation / material3 / icons / tooling / test, hilt-android / compiler / testing, room-*, kotlinx-serialization-json, kotlinx-coroutines-core / test, lifecycle-runtime / viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive*, junit, mockk, turbine, robolectric, androidx-test-junit, roborazzi*); `tomlj`; cùng họ version với các thư viện trên: `hilt-core`, `kotlinx-coroutines-android`, `androidx-navigation3-ui`, `androidx-lifecycle-viewmodel-navigation3` (để một version chỉ khai báo một lần); **thư viện ngoài của module `:core:*`** (từ T15d, mục 11): `javax-inject`, `retrofit`, `retrofit-converter-kotlinx-serialization`, `okhttp`, `okhttp-mockwebserver`, `androidx-datastore-preferences`, `tink-android` | `build-logic` (`Catalog.kt`, `build-logic/settings.gradle.kts`); module `:core:*` (chỉ dùng catalog này); module khác dùng trực tiếp khi cần (`pokepoke.junit`, `pokepoke.retrofit`, `pokepoke.plugins.pokepoke.android.library`...) |
-| `gradle/libs.versions.toml` | `libs` | Thư viện riêng của app mà module tự khai báo: coil, startup, activity-compose, core-ktx, splashscreen, appcompat, material3-navigation-suite, espresso | Module ngoài `:core:*` (`:ui:*`, `:business:*`, `:feature:*`, `:app`, `:debugtool`) |
+| `gradle/pokepoke.versions.toml` | `pokepoke` | Mọi thứ `build-logic` đọc hoặc tự thêm: version SDK / JVM (`compileSdk`, `compileSdkMinor`, `minSdk`, `targetSdk`, `jvm`); artifact Gradle plugin (AGP, KGP, compose compiler, KSP, Hilt, Room, Kover, Roborazzi) + `[plugins]` tương ứng + alias convention plugin `pokepoke-*`; thư viện plugin tự thêm (Compose BOM + ui / foundation / material3 / icons / tooling / test, hilt-android / compiler / testing, room-*, kotlinx-serialization-json, kotlinx-coroutines-core / test, lifecycle-runtime / viewmodel-compose, hilt-lifecycle-viewmodel-compose, navigation3-runtime, material3-adaptive*, junit, mockk, turbine, robolectric, androidx-test-junit, roborazzi*); `tomlj`; cùng họ version với các thư viện trên: `hilt-core`, `kotlinx-coroutines-android`, `androidx-navigation3-ui`, `androidx-lifecycle-viewmodel-navigation3` (để một version chỉ khai báo một lần) | `build-logic` (`Catalog.kt`, `build-logic/settings.gradle.kts`); module `:core:*` và module khác dùng trực tiếp khi cần (`pokepoke.junit`, `pokepoke.plugins.pokepoke.android.library`...) |
+| `gradle/core.versions.toml` | `coreLibs` | Thư viện ngoài của module `:core:*` (từ T15d, mục 11): `javax-inject`, `retrofit`, `retrofit-converter-kotlinx-serialization`, `okhttp`, `okhttp-mockwebserver`, `androidx-datastore-preferences`, `tink-android` | `core/**`; module khác khi cần (vd. `coreLibs.retrofit` ở `:business:data`). `build-logic` **không** đọc |
+| `gradle/libs.versions.toml` | `libs` | Thư viện riêng của app mà module tự khai báo: coil, startup, activity-compose, core-ktx, splashscreen, appcompat, material3-navigation-suite, espresso | Module ngoài `:core:*` (`:ui:*`, `:business:*`, `:feature:*`, `:app`, `:debugtool`); `core/**` không dùng |
 
-- **Mỗi artifact (`group:name`) nằm ở đúng một catalog** (kể cả cùng version): trùng → Gradle âm thầm chọn bản cao hơn, khó phát hiện. Test `CatalogConsistencyTest` trong `build-logic` đọc cả hai file (tomlj), fail nếu trùng `group:name` (library) hoặc trùng plugin id, nếu `version.ref` trỏ ngoài `[versions]` của chính file, hoặc nếu alias / version / plugin id mà convention plugin dùng không có trong `pokepoke.versions.toml`. Version tham chiếu (`version.ref`) chỉ trỏ tới `[versions]` **cùng file**.
-- Root `settings.gradle.kts`: `dependencyResolutionManagement { versionCatalogs { create("pokepoke") { from(files("gradle/pokepoke.versions.toml")) } } }` (`libs` vẫn được Gradle tự tạo từ `gradle/libs.versions.toml`).
-- `build-logic/settings.gradle.kts`: chỉ `create("pokepoke") { from(files("../gradle/pokepoke.versions.toml")) }` — `build-logic` **không** đọc `libs`.
+- **Mỗi artifact (`group:name`) nằm ở đúng một catalog** (kể cả cùng version): trùng → Gradle âm thầm chọn bản cao hơn, khó phát hiện. Test `CatalogConsistencyTest` trong `build-logic` đọc cả ba file (tomlj), fail nếu trùng `group:name` (library) hoặc trùng plugin id giữa hai file bất kỳ, nếu `version.ref` trỏ ngoài `[versions]` của chính file, hoặc nếu alias / version / plugin id mà convention plugin dùng không có trong `pokepoke.versions.toml`. Version tham chiếu (`version.ref`) chỉ trỏ tới `[versions]` **cùng file**.
+- Root `settings.gradle.kts` khai báo cả `pokepoke` và `coreLibs`: `versionCatalogs { create("pokepoke") { from(files("gradle/pokepoke.versions.toml")) }; create("coreLibs") { from(files("gradle/core.versions.toml")) } }` (`libs` vẫn được Gradle tự tạo từ `gradle/libs.versions.toml`).
+- `build-logic/settings.gradle.kts`: chỉ `create("pokepoke") { from(files("../gradle/pokepoke.versions.toml")) }` — `build-logic` **không** đọc `libs` và `coreLibs`.
 - `Catalog.kt`: `named("pokepoke")`; mọi `addDep` / `version(...)` trong plugin chỉ tra catalog này.
-- Module: plugin `alias(pokepoke.plugins.pokepoke.android.library)`..., thư viện của catalog nền tảng `pokepoke.xxx`, thư viện riêng `libs.xxx`. **`build.gradle.kts` của `:core:*` không được dùng `libs.*`** (core publish cùng catalog `pokepoke`, project dùng không có `libs` của repo này). Core cần thư viện mới → thêm vào `pokepoke.versions.toml`.
-- **Khi publish `build-logic` lên Maven** (chưa làm): publish catalog `pokepoke` thành artifact riêng bằng plugin `version-catalog`, cùng version với plugin; project dùng khai báo `create("pokepoke") { from("com.khangtm.pokepoke:catalog:<version>") }` → plugin luôn chạy với bộ version đã được test, `libs` hoàn toàn của project. Các file cấu hình (`configs/build/structure.toml`, `configs/env/`, `configs/signing/`) được đọc theo `rootProject` của project dùng, không nằm trong jar, nên vẫn đúng sau khi publish.
+- Module: plugin `alias(pokepoke.plugins.pokepoke.android.library)`..., thư viện nền tảng `pokepoke.xxx`, thư viện ngoài của core `coreLibs.xxx`, thư viện riêng của app `libs.xxx`. **`build.gradle.kts` của `:core:*` chỉ dùng `pokepoke.*` và `coreLibs.*`, không dùng `libs.*`** (core publish cùng `coreLibs`; project dùng không có `libs` của repo này).
+- Core cần thư viện ngoài mới (không phải thứ plugin tự thêm) → thêm vào `core.versions.toml`.
+- **Khi tách / publish:** `build-logic` đi cùng `pokepoke`; core đi cùng `coreLibs`, dùng build-logic đã publish và có version riêng (mục 11).
+- **Khi publish `build-logic` lên Maven** (chưa làm): publish catalog `pokepoke` (và `coreLibs` cho core) thành artifact riêng bằng plugin `version-catalog`, cùng version với plugin; project dùng khai báo `create("pokepoke") { from("com.khangtm.pokepoke:catalog:<version>") }` → plugin luôn chạy với bộ version đã được test, `libs` hoàn toàn của project. Các file cấu hình (`configs/build/structure.toml`, `configs/env/`, `configs/signing/`) được đọc theo `rootProject` của project dùng, không nằm trong jar, nên vẫn đúng sau khi publish.
 
 ## 2. `settings.gradle.kts`
 
@@ -442,7 +445,7 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 ## 11. Module dùng chung (`:core:*`) & publish
 
 Mục tiêu: sau này publish lên Maven, để project khác dùng lại, các phần sau:
-- `build-logic`, cùng catalog `pokepoke`.
+- `build-logic`, cùng catalog `pokepoke`; core cùng catalog `coreLibs`.
 - `:core:common-kotlin`, `:core:common-android`, `:core:connectivity`, `:core:network`, `:core:storage:*`, `:core:securestorage:*`.
 - `:core:deeplink`, `:core:navigation`, `:core:testing`.
 
@@ -456,16 +459,18 @@ Mục tiêu: sau này publish lên Maven, để project khác dùng lại, các 
 
 **Luật đã áp dụng ngay**, để code hôm nay luôn publish được:
 1. `:core:**` chỉ phụ thuộc `:core:**`. Luật nằm trong `[[rules]]` của `structure.toml` (mục 5) và được build kiểm tra.
-2. `build.gradle.kts` của `:core:*` chỉ dùng catalog `pokepoke`, không dùng `libs` (mục 1.4).
+2. `build.gradle.kts` của `:core:*` chỉ dùng catalog `pokepoke` + `coreLibs`, không dùng `libs` (mục 1.4).
 3. Core không chứa string, resource hay giá trị riêng của app (URL, scheme, tên app). Những giá trị đó do `:app` cấp qua Hilt (`@BaseUrl`, `DeepLinkConfig`...) từ `BuildConfig` (mục 4b).
 4. Core có sẵn Hilt module (`@InstallIn`), nên project dùng core phải dùng Hilt. Đây là điều kiện chấp nhận được vì cùng stack, cần ghi rõ trong README khi publish.
 5. Phụ thuộc phải đi kèm khi dùng:
    - `deeplink` cần `navigation`.
    - Plugin `pokepoke.android.library` tự thêm `:core:testing` (`structure.toml` `[library]`), nên `testing` phải được publish cùng.
 
+**Hướng phụ thuộc:** core → build-logic, một chiều (qua plugin + version trong `pokepoke`). Code build-logic không biết gì về core: mọi path module nằm ở `structure.toml`.
+
 **Khi publish thật (chưa làm, YAGNI).** Khi đó cần:
 - Plugin `pokepoke.publish`: dùng `maven-publish`, groupId `com.khangtm.pokepoke`, artifactId theo path (`core-network`, `core-storage-api`...).
-- Version riêng cho core + build-logic + catalog (một version chung cho cả bộ), tách khỏi `version.properties` của app.
+- Version: build-logic + `pokepoke` chung một version; core + `coreLibs` có version riêng, vòng đời độc lập; cả hai tách khỏi `version.properties` của app.
 - `consumer-rules.pro` cho R8 (kotlinx-serialization, Retrofit, Tink).
 - `explicitApi()` và kiểm tra tương thích nhị phân (binary-compatibility-validator).
 - Publish `testFixtures` của `storage:api`, `securestorage:api`, `navigation` (fake cho test). Cần kiểm chứng với AGP.
