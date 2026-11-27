@@ -22,7 +22,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
 
 - ViewModel nhận tham số từ key qua **assisted injection**: `@HiltViewModel(assistedFactory = X.Factory::class)` + `hiltViewModel<X, X.Factory>(creationCallback = { it.create(key.pokemonId) })`.
 - Layer, kiểu kết quả, luật lỗi: [layers.md](layers.md). ViewModel chỉ inject UseCase + `Navigator` + tham số `@Assisted`.
-- `Failure(e)` hiển thị dạng snackbar dùng `e.toUiMessage()` (core:ui), trừ khi screen nói khác.
+- `Failure(e)` hiển thị dạng snackbar dùng `e.toUiMessage()` (ui:common), trừ khi screen nói khác.
 - Route nhận `modifier` và ViewModel mặc định `hiltViewModel()`.
 - Screen nhận thêm `snackbarHostState` nếu cần hiển thị `UiMessage`.
 - Test mỗi screen: `<Screen>ViewModelTest` (unit, fake use case), `<UseCase>Test` cho mỗi use case nội bộ của feature (fake repository / fake use case), `<Repository>Test` cho mỗi repository của feature (data source thật trong môi trường test, phủ bảng lỗi layers.md §2) + `<Screen>ScreenTest` (Compose UI test Robolectric: hiển thị đúng theo state, click phát đúng action) + `<Screen>ScreenshotTest` (Roborazzi trên các state mẫu của Previews).
@@ -47,7 +47,7 @@ feature/<x>/impl/src/main/kotlin/com/khangtm/pokepoke/feature/<x>/impl/
   - `entryProvider = entryProvider { installers.forEach { it.install(this) } }`.
 - Manifest: `MainActivity` `launchMode="singleTask"`, `configChanges="orientation|screenSize|screenLayout|smallestScreenSize"`, theme `Theme.PokePoke.Starting`, intent-filter theo deeplinks.md; `android:enableOnBackInvokedCallback="true"`; service `androidx.appcompat.app.AppLocalesMetadataHolderService` (`enabled=false`, `exported=false`, meta-data `autoStoreLocales=true`).
 - Locale: `res/resources.properties` chứa `unqualifiedResLocale=en`; `androidResources.generateLocaleConfig = true`.
-- `app_name` = "PokePoke" trong `translation/src/main/res/values/non-translation.xml` (không dịch; hiện là "Poke Poke" chuyển từ project gốc ở T07a — T14 đổi). Flavor `dev` / `qa` override thành "PokePoke Dev" / "PokePoke QA" bằng `app/src/<flavor>/res/values/non-translation.xml` (build.md §4a, làm ở T13c).
+- `app_name` = "PokePoke" trong `ui/translation/src/main/res/values/non-translation.xml` (không dịch; hiện là "Poke Poke" chuyển từ project gốc ở T07a — T14 đổi). Flavor `dev` / `qa` override thành "PokePoke Dev" / "PokePoke QA" bằng `app/src/<flavor>/res/values/non-translation.xml` (build.md §4a, làm ở T13c).
 - Theme XML: `Theme.PokePoke.Starting` (parent `Theme.SplashScreen`, `windowSplashScreenBackground` = primary light `#B8401F` / dark `#8F2A0B` trong `values-night`, `windowSplashScreenAnimatedIcon` = `@drawable/ic_launcher_foreground`, `postSplashScreenTheme` = `@style/Theme.PokePoke`).
 
 ### 1.2. `MainShell` (`:feature:main:impl`)
@@ -233,7 +233,7 @@ sealed interface DetailsUiAction {
 
 ViewModel inject: `ObservePokemonDetailUseCase` (`:business:domain`), `ObserveIsFavouriteUseCase`, `ToggleFavouriteUseCase` (`:business:domain`), `Navigator`, `@Assisted pokemonId`.
 
-- `content` = `retryTrigger.flatMapLatest { observePokemonDetail(id).map { it.toLoadState() }.onStart { emit(LoadState.Loading) } }` (`toLoadState()` ở core:ui); Retry → phát `retryTrigger`.
+- `content` = `retryTrigger.flatMapLatest { observePokemonDetail(id).map { it.toLoadState() }.onStart { emit(LoadState.Loading) } }` (`toLoadState()` ở ui:common); Retry → phát `retryTrigger`.
 - `isFavourite` = `observeIsFavourite(id)`: `Success(b)` → `b`; `Failure` → `false` (không báo lỗi).
 - ToggleFavourite → `toggleFavourite(id)` (`ToggleFavouriteUseCase`). `Failure` → `message` = `details_favourite_error` "Couldn't update favourites." / "Không cập nhật được danh sách yêu thích.". `Success(true)` / `Success(false)` → `message` = `details_added_favourite` "Added to favourites" / "Đã thêm vào yêu thích" hoặc `details_removed_favourite` "Removed from favourites" / "Đã xóa khỏi yêu thích".
 
@@ -331,7 +331,7 @@ sealed interface ProfileUiAction {
 
 ## 8. Debugtool (`:debugtool`)
 
-Package `com.khangtm.pokepoke.debugtool`. Điều hướng nội bộ bằng back stack riêng (`mutableStateListOf<DebugScreen>()`), **không** dùng Navigator của app. Text vẫn qua `strings.xml` riêng của `:debugtool` (không dùng `:translation`, để không lọt vào release; chỉ cần `values/` English).
+Package `com.khangtm.pokepoke.debugtool`. Điều hướng nội bộ bằng back stack riêng (`mutableStateListOf<DebugScreen>()`), **không** dùng Navigator của app. Text vẫn qua `strings.xml` riêng của `:debugtool` (không dùng `:ui:translation`, để không lọt vào release; chỉ cần `values/` English).
 
 | Screen | Nội dung |
 |---|---|

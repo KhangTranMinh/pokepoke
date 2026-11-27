@@ -2,9 +2,9 @@
 
 > Phong cách: **Material 3**, tông chủ đạo đỏ san hô ấm + navy, sáng sủa, bo góc mềm. Không dùng dynamic color (giữ nhận diện thống nhất). Hỗ trợ light/dark theo hệ thống. Không dùng logo / font / asset thương hiệu Pokémon.
 
-## 1. `:core:designsystem`
+## 1. `:ui:designsystem`
 
-Package `com.khangtm.pokepoke.core.designsystem`.
+Package `com.khangtm.pokepoke.ui.designsystem` (trước T15d: `:core:designsystem` / `core.designsystem`).
 
 ### 1.1. Màu (`Color.kt`, `PokeColorScheme.kt`)
 
@@ -96,9 +96,9 @@ Ghi chú cài đặt (T06): `loading` không disable nút mà bỏ qua click (gi
 
 Mọi component có `@Preview` light + dark và screenshot test Roborazzi.
 
-## 2. `:core:ui`
+## 2. `:ui:common`
 
-Package `com.khangtm.pokepoke.core.ui`. Composable dùng chung **không biết nghiệp vụ**.
+Package `com.khangtm.pokepoke.ui.common` (trước T15d: `:core:ui` / `core.ui`). Composable dùng chung **không biết nghiệp vụ**.
 
 | Composable / type | Chữ ký | Hành vi |
 |---|---|---|
@@ -128,8 +128,8 @@ Strings chung khác: `ui_retry` Retry/Thử lại, `ui_loading` Loading/Đang t�
 
 ## 3. Quy tắc UI
 
-- Mọi text hiển thị và `contentDescription` lấy từ `strings.xml` trong `:translation` (`import com.khangtm.pokepoke.translation.R`) (`values/` English và `values-vi/` Tiếng Việt, key có tiền tố module); chuỗi không cần dịch ở `non-translation.xml`. Ngoại lệ duy nhất: dữ liệu (tên Pokémon, tên ability, số id) — format qua `PokemonFormat`.
-- Key string trong `:translation` có tiền tố module: `designsystem_`, `ui_`, `home_`, `details_`, `favourite_`, `profile_`, `auth_`, `onboarding_`, `main_`, `app_` (test của `:translation` kiểm tra). `:debugtool` có strings riêng trong module của nó, tiền tố `debugtool_`.
+- Mọi text hiển thị và `contentDescription` lấy từ `strings.xml` trong `:ui:translation` (`import com.khangtm.pokepoke.ui.translation.R`) (`values/` English và `values-vi/` Tiếng Việt, key có tiền tố module); chuỗi không cần dịch ở `non-translation.xml`. Ngoại lệ duy nhất: dữ liệu (tên Pokémon, tên ability, số id) — format qua `PokemonFormat`.
+- Key string trong `:ui:translation` có tiền tố module: `designsystem_`, `ui_` (của `:ui:common`, giữ nguyên tên key), `home_`, `details_`, `favourite_`, `profile_`, `auth_`, `onboarding_`, `main_`, `app_` (test của `:ui:translation` kiểm tra). `:debugtool` có strings riêng trong module của nó, tiền tố `debugtool_`.
 - Mỗi screen có màu nền `surface`; nội dung dạng form (login, profile) giới hạn `maxContentWidth` và căn giữa trên màn rộng.
 - Edge-to-edge: `Scaffold` xử lý insets; không hardcode padding status bar.
 - Không dùng `Color(...)` trực tiếp trong feature, trừ bảng màu type ở `details:impl` (screens.md).

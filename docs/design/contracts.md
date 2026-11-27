@@ -1,6 +1,6 @@
 # Contracts giữa các module
 
-> **Nguồn chuẩn** cho mọi type public trong module `:api` và module không tách (`core:common-kotlin`, `core:ui`...). Implement đúng tên, package, chữ ký. Được phép thêm member `internal`/`private`; **không** đổi chữ ký public mà không ghi vào [`docs/decisions.md`](../decisions.md).
+> **Nguồn chuẩn** cho mọi type public trong module `:api` và module không tách (`core:common-kotlin`, `ui:common`...). Implement đúng tên, package, chữ ký. Được phép thêm member `internal`/`private`; **không** đổi chữ ký public mà không ghi vào [`docs/decisions.md`](../decisions.md).
 >
 > Quy ước package = namespace module: `com.khangtm.pokepoke.<nhóm>.<tên>[.api|.impl]` (nhóm: `core`, `domain`, `data`, `feature`). Ví dụ `:core:storage:api` → `com.khangtm.pokepoke.core.storage.api`; module không tách như `:core:navigation` → `com.khangtm.pokepoke.core.navigation`.
 
@@ -113,7 +113,7 @@ data class AppVersion(val name: String, val code: Long)
 interface AppInfo { val version: AppVersion }   // impl đọc PackageManager; Hilt binding trong core:common-android
 ```
 
-`LoadState` (trạng thái hiển thị Loading / Content / Error) là kiểu của UI → nằm ở `core:ui` (designsystem.md §2).
+`LoadState` (trạng thái hiển thị Loading / Content / Error) là kiểu của UI → nằm ở `ui:common` (designsystem.md §2).
 
 ## 2. `:core:network` và `:core:connectivity`
 
@@ -321,7 +321,7 @@ interface DeepLinkIntentFactory {
 - Parse bằng `java.net.URI` (test được trên JVM). Scheme custom: segments = `[host] + path segments`. Scheme `https`/`http`: host phải thuộc `hosts`, segments = path segments. Segment rỗng bị bỏ; `/` → `[]`.
 - `DeepLinkIntentFactory` impl: `packageManager.getLaunchIntentForPackage(packageName)` + `action = VIEW`, `data = uri`, `FLAG_ACTIVITY_NEW_TASK or FLAG_ACTIVITY_CLEAR_TOP`, `PendingIntent.FLAG_IMMUTABLE or FLAG_UPDATE_CURRENT`.
 
-## 7. `:core:ui` và `:core:designsystem`
+## 7. `:ui:common` và `:ui:designsystem`
 
 Xem [designsystem.md](designsystem.md) (chữ ký composable dùng chung).
 
