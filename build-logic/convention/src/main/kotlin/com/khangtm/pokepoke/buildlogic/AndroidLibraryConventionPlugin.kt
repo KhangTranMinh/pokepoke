@@ -26,9 +26,12 @@ class AndroidLibraryConventionPlugin : Plugin<Project> {
             addDep("testImplementation", "kotlinx-coroutines-test")
             addDep("testImplementation", "robolectric")
             addDep("testImplementation", "androidx-test-junit")
-            // :core:testing is the test toolkit itself; :translation must not depend on any module.
-            if (path != ":core:testing" && path != ":translation") {
-                dependencies.add("testImplementation", project(":core:testing"))
+            // Which modules are added, and which modules are excluded (the test toolkit itself, resource-only
+            // modules), is defined in configs/build/structure.toml [library].
+            val structure = moduleStructure()
+            if (structure.receivesLibraryAutoDependencies(path)) {
+                structure.libraryTestImplementation.filter { it != path }
+                    .forEach { dependencies.add("testImplementation", project(it)) }
             }
         }
     }

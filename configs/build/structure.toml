@@ -1,0 +1,50 @@
+# configs/build/structure.toml - docs/design/build.md §3a
+
+[library]                                    # pokepoke.android.library
+testImplementation = [":core:testing"]
+excludeAutoDependencies = [":core:testing", ":translation"]   # không nhận dependency tự thêm ở trên
+
+[feature.api]                                # pokepoke.android.feature.api
+api = [":core:common-kotlin", ":core:navigation"]
+
+[feature.impl]                               # pokepoke.android.feature.impl
+implementation = [":core:designsystem", ":core:ui", ":core:common-kotlin", ":core:navigation", ":translation"]
+testFixtures = [":core:navigation"]          # testImplementation(testFixtures(project(x)))
+
+[app]
+debugTool = ":debugtool"                     # verifyReleaseHasNoDebugTool (mục 5)
+
+[kover]                                      # mục 6
+minLineCoverage = 70
+modules = [
+  ":core:common-kotlin", ":core:common-android", ":core:network", ":core:connectivity",
+  ":core:navigation", ":core:deeplink", ":core:*:impl",
+  ":business:domain", ":business:data", ":feature:*:impl", ":debugtool",
+]
+
+# Luật kiến trúc (mục 5): module khớp `from` (trừ `except`) không được phụ thuộc module khớp `to`.
+[[rules]]
+from = ["**"]
+except = [":app"]
+to = [":**:impl", ":debugtool", ":business:data"]
+reason = "only :app may depend on :impl / :debugtool / :business:data (Hilt gom binding ở :app)"
+
+[[rules]]
+from = [":core:**"]
+to = [":business:**", ":feature:**"]
+reason = ":core must not depend on :business or :feature"
+
+[[rules]]
+from = [":business:**"]
+to = [":feature:**"]
+reason = ":business must not depend on :feature"
+
+[[rules]]
+from = [":debugtool"]
+to = [":business:**", ":feature:**"]
+reason = ":debugtool must not depend on :business or :feature"
+
+[[rules]]
+from = [":translation"]
+to = ["**"]
+reason = ":translation chỉ chứa resource, không phụ thuộc module nào"

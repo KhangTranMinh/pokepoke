@@ -10,13 +10,8 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
             pluginManager.apply("pokepoke.android.compose")
             pluginManager.apply("pokepoke.hilt")
 
-            listOf(
-                ":core:designsystem",
-                ":core:ui",
-                ":core:common-kotlin",
-                ":core:navigation",
-                ":translation",
-            ).forEach { dependencies.add("implementation", project(it)) }
+            val structure = moduleStructure()
+            structure.featureImplImplementation.forEach { dependencies.add("implementation", project(it)) }
             listOf(
                 "androidx-lifecycle-runtime-compose",
                 "androidx-lifecycle-viewmodel-compose",
@@ -26,7 +21,9 @@ class AndroidFeatureImplConventionPlugin : Plugin<Project> {
                 "androidx-compose-material3-adaptive-layout",
                 "androidx-compose-material3-adaptive-navigation3",
             ).forEach { addDep("implementation", it) }
-            dependencies.add("testImplementation", dependencies.testFixtures(project(":core:navigation")))
+            structure.featureImplTestFixtures.forEach {
+                dependencies.add("testImplementation", dependencies.testFixtures(project(it)))
+            }
         }
     }
 }
