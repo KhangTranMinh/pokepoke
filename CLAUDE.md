@@ -13,6 +13,7 @@
 - Không bao giờ in token ra output, commit file `.env`, hay ghi token vào file nào khác. `configs/credentials/` đã nằm trong `.gitignore`.
 - Signing: `configs/signing/release.*` (keystore + mật khẩu release) **không bao giờ commit / in ra**; `configs/signing/debug.*` được commit (khóa debug dùng chung).
 - Config môi trường (`docs/design/build.md` §4b): `configs/env/secrets.toml` **không bao giờ commit / in ra**; `configs/env/config.toml` và `secrets.example.toml` được commit. Giá trị theo flavor (URL, cờ, secret) đặt ở `configs/env/`, không hardcode trong `build-logic`.
+- CD (`docs/design/build.md` §12): JSON key service account Firebase, `RELEASE_KEYSTORE_BASE64`, `RELEASE_PROPERTIES` chỉ nằm trong GitHub Environment secrets — **không bao giờ commit / in ra / lưu vào repo**; workflow ghi ra file tạm và xoá ở bước cuối.
 
 ## Implement project (dành cho agent)
 
@@ -23,6 +24,7 @@
   3. `git push -u origin <branch>` → tạo PR vào `main` bằng `gh pr create` (token theo mục trên). Tiêu đề PR = dòng đầu commit; body: tóm tắt, kết quả DoD, quyết định đã ghi vào `decisions.md`, cuối body có dòng attribution theo quy định của harness.
   4. Chờ CI: `gh pr checks <số PR> --watch`. ⏸ CI đang **tạm tắt** (`CI_SKIP` trong `ci.yml`, build.md §10): check `build` xanh ngay nên **bắt buộc** chạy lệnh "Giống CI" (build.md §9) ở local trước khi push và ghi kết quả vào body PR. CI đỏ → sửa trên branch đó (xem quy tắc fixup bên dưới), push lại, chờ tới khi xanh.
   5. **Dừng lại**: báo user link PR + tóm tắt + kết quả DoD / CI + quyết định. **Không merge.** Chờ user merge và yêu cầu task tiếp theo; task sau luôn bắt đầu lại từ bước 1 (`main` mới nhất).
+- **Release** (`docs/design/build.md` §12.5): fix bug cho bản đang release thì làm trên branch `fix/<slug>` tạo từ `release/vX.Y`, PR vào `release/vX.Y` (vẫn 1 commit). Bump version: branch `bump/vX.Y.Z-<versionCode>`, chỉ sửa `version.properties`, PR vào `release/vX.Y`. Version **chỉ đổi trên `release/*`**, không đổi trên `main`. Đưa release về `main`: branch `merge/release-vX.Y-<ngày>` tạo từ `release/vX.Y`, `git merge origin/main`, PR vào `main`; đây là PR duy nhất được chứa nhiều commit. Không bao giờ tự tạo / xoá branch `release/*` hay push tag; việc đó do user làm.
 - **Mỗi task = đúng 1 commit** (bắt buộc):
   - Chỉ commit khi DoD đã xanh; không commit dở dang giữa chừng, không gộp 2 task vào 1 commit, không tách 1 task thành nhiều commit.
   - Commit chứa trọn task: code, test, ảnh screenshot Roborazzi, dấu `[x]` trong `docs/tasks.md`, dòng mới trong `docs/decisions.md` (nếu có).

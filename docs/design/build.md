@@ -438,7 +438,7 @@ Giữ nguyên `org.gradle.configuration-cache=true` và `kotlin.code.style=offic
 
 ⚠️ **Đổi tên job `build` trong `ci.yml` → phải sửa ruleset cùng lúc**; nếu không, ruleset chờ một check không bao giờ xuất hiện → mọi PR bị khóa. Ruleset / cài đặt không nằm trong code: đổi qua web hoặc `gh api repos/KhangTranMinh/pokepoke/rulesets/28142956` (token cần quyền Administration).
 
-**Ruleset `protect-main`** (đã tạo 2026-11-26 bằng GitHub API):
+**Ruleset `protect-main`** (đã tạo 2026-11-26 bằng GitHub API; từ 2026-11-27 áp dụng cho `main` **và `release/**`** (§12.5), `do_not_enforce_on_create` của check `build` = true để tạo được branch release):
 - Bắt buộc PR, **0 approval** (PR do agent tạo bằng token của user → tác giả là user, GitHub không cho tự approve; "review" = user bấm merge).
 - Bắt buộc status check `build` xanh, branch phải cập nhật theo `main` (strict).
 - Cấm force push, cấm xóa branch; **không có bypass** (kể cả admin — token của agent mang quyền admin).
@@ -479,3 +479,138 @@ Mục tiêu: sau này publish lên Maven, để project khác dùng lại, các 
 - Publish `testFixtures` của `storage:api`, `securestorage:api`, `navigation` (fake cho test). Cần kiểm chứng với AGP.
 - `structure.toml` của project dùng: dependency trong `[library]` / `[feature.*]` vẫn là project path, nên cần cơ chế cho phép khai báo artifact Maven. Thiết kế lúc làm.
 - Tên trong `core:securestorage` (`pokepoke_tink_keyset`, `android-keystore://pokepoke_master_key`) giữ nguyên. Không gây lỗi, vì dữ liệu và Keystore là riêng của từng app.
+
+## 12. CD — Firebase App Distribution
+
+Mục tiêu: build `qaRelease` / `prodRelease` rồi tự đẩy APK cho tester qua Firebase App Distribution. CD **không** thay CI: CI (mục 10) kiểm tra PR; CD chỉ build + phát hành, chạy sau khi code đã vào `main`.
+
+### 12.1. App trên Firebase
+
+Hai Firebase project, mỗi môi trường một project. Prod tách khỏi qa: tester, quyền và (sau này) Crashlytics / Analytics không lẫn nhau. `dev` không phát hành.
+
+| Firebase project | Android app (package) | Variant phát hành | Khóa ký | SHA-1 | SHA-256 |
+|---|---|---|---|---|---|
+| `pokepoke2026` | `com.khangtm.pokepoke.qa` | `qaRelease` | debug (`configs/signing/debug.keystore`, commit) | `AE:10:40:82:5F:C5:AA:68:23:95:A7:F4:B6:3F:28:BC:4D:0B:A8:C1` | `B7:A5:BA:D4:10:37:66:F2:7F:FF:9C:4F:BB:07:D1:E3:7F:B3:DC:8F:84:49:28:CF:57:85:F4:87:DD:18:42:9D` |
+| `pokepoke2026-prod` | `com.khangtm.pokepoke` | `prodRelease` | release (`configs/signing/release.keystore`, alias `pokepoke`, không commit) | `D5:64:D8:DC:F9:C1:F8:4C:F5:9E:EF:E3:C9:8C:07:2A:7C:95:7D:77` | `EC:B5:0F:C4:75:94:47:9C:BD:8F:B1:1B:F9:AA:76:B4:65:A0:AF:81:F8:65:37:F2:4E:61:3E:7C:D4:B9:71:6C` |
+
+- **SHA** lấy bằng lệnh `keytool -list -v -keystore configs/signing/<debug|release>.keystore -alias <alias>`. Mật khẩu nằm trong `.properties`; truyền qua `-storepass:env`, không in ra.
+- **App Distribution không cần SHA.** Khai báo SHA để sau này dùng Google Sign-In, App Check hoặc Dynamic Links thì khỏi phải thêm lại.
+- **Đổi khóa release thì phải cập nhật SHA của `pokepoke-prod`** (Firebase `pokepoke2026-prod` → Project settings → app → *Add fingerprint*) và cập nhật bảng trên.
+- **`qaDebug` (`com.khangtm.pokepoke.qa.debug`) và `prodDebug` (`com.khangtm.pokepoke.debug`) không phát hành.** Khi nào cần SDK Firebase cho bản debug thì thêm app riêng.
+- **Hiện chưa dùng SDK Firebase trong app**, nên không cần `google-services.json` / plugin `google-services`. App Distribution chỉ cần **App ID** (`1:<số>:android:<hash>`, xem ở Project settings). Khi nào thêm SDK thì đặt file ở `app/src/qa/google-services.json` / `app/src/prod/google-services.json` (commit được: API key trong đó không phải bí mật, đã nằm sẵn trong APK; giới hạn key ở Google Cloud Console) và thiết kế lúc đó. Hiện **không** đặt file vào repo: chưa có plugin đọc nó.
+
+### 12.2. Workflow `.github/workflows/cd.yml`
+
+| Job | Khi chạy | GitHub Environment | Build | Phát cho nhóm tester |
+|---|---|---|---|---|
+| `distribute-qa` | `push` lên `release/**` **có đổi `version.properties`** (`on.push.paths`), tức là merge PR bump version (§12.5); hoặc bấm tay: `workflow_dispatch` với input `env = qa`, chọn branch `release/*` ở *Use workflow from* | `qa` (chỉ branch `release/*`) | `./gradlew :app:assembleQaRelease` | `qa` |
+| `distribute-prod` | `push` tag `v*` (vd. `v1.2.0`), hoặc `workflow_dispatch` với input `env = prod` (chọn **tag** ở *Use workflow from*) | `prod` (**bắt buộc user duyệt** trước khi job chạy; chỉ tag `v*`) | `./gradlew :app:assembleProdRelease` | `prod` |
+
+- **Trigger:**
+  ```yaml
+  on:
+    push:
+      branches: ['release/**']
+      paths: ['version.properties']
+      tags: ['v*']
+    workflow_dispatch:
+      inputs:
+        env: { type: choice, options: [qa, prod], required: true }
+  ```
+  - `paths` chỉ lọc push lên branch, push tag luôn chạy.
+  - Job chọn bằng `if:`. `qa` chạy khi `github.ref` bắt đầu `refs/heads/release/`, hoặc khi dispatch với `inputs.env == 'qa'`. `prod` chạy khi `github.ref` bắt đầu `refs/tags/v`, hoặc khi dispatch với `inputs.env == 'prod'`.
+- **Vì sao chỉ build khi đổi version:**
+  - PR fix bug vào release không đụng `version.properties`, nên không build. Tester chỉ nhận bản khi có PR bump version.
+  - Mỗi bản qa có `versionCode` riêng: `1.2.0 (13)`, `1.2.0 (14)`...
+- **Runner `ubuntu-latest`:** chỉ build, không chạy test hay screenshot. Bước cài đặt giống CI: Temurin 21, `setup-gradle` (chỉ đọc cache), chấp nhận license SDK, bước "Write env secrets" (§4b). `actions/checkout` dùng `fetch-depth: 0`, cần cho ghi chú phát hành và kiểm tra tag.
+- **Không chạy trên `pull_request`**, để secret không lộ cho code chưa review. `permissions: contents: read`.
+- **`concurrency`:**
+  - `qa` dùng `cd-qa-${{ github.ref }}` với `cancel-in-progress: true`.
+  - `prod` dùng `cd-prod-${{ github.ref }}` với `cancel-in-progress: false`.
+- **Không bị `CI_SKIP` ảnh hưởng:** `CI_SKIP` chỉ nằm trong `ci.yml`.
+- **Kiểm tra trước khi build prod** (sai thì fail, message rõ ràng):
+  1. Tag phải đúng `v<versionMajor>.<versionMinor>.<versionPatch>` đọc từ `version.properties` của commit được tag.
+  2. Commit được tag phải nằm trên một branch `release/*` (`git branch -r --contains "$GITHUB_SHA"` có `origin/release/`). Không phát prod từ `main`.
+- **Ghi chú phát hành (release notes):** dòng đầu là `<versionName> (<versionCode>) · <7 ký tự SHA commit>`, sau đó là danh sách commit (`git log --no-merges --pretty='- %s'`):
+  - `qa`: các commit từ lần đổi `version.properties` trước đó tới HEAD, tối đa 30. Lấy bằng `git log -n 2 --format=%H -- version.properties`: dòng thứ hai là mốc.
+  - `prod`: các commit từ tag `v*` trước đó tới tag hiện tại. Nếu chưa có tag trước thì lấy 30 commit gần nhất.
+- **Bước phát hành:** dùng Firebase CLI chính chủ, pin version, không dùng action của bên thứ ba:
+  ```sh
+  npx --yes firebase-tools@15.37.0 appdistribution:distribute "$APK" \
+    --app "$FIREBASE_APP_ID" --groups "$FIREBASE_GROUPS" --release-notes-file "$RUNNER_TEMP/notes.txt"
+  ```
+  - Xác thực bằng `GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-sa.json`. File này ghi từ secret bằng `printf '%s'` và xoá ở bước cuối (`if: always()`).
+  - Đường dẫn APK: `app/build/outputs/apk/<flavor>/release/app-<flavor>-release.apk`. Job phải kiểm tra file tồn tại.
+- **Khóa release cho prod:** ghi từ secret trước khi build:
+  - `RELEASE_KEYSTORE_BASE64` → `base64 -d` → `configs/signing/release.keystore`.
+  - `RELEASE_PROPERTIES` → `configs/signing/release.properties`.
+  - Cả hai được xoá ở bước cuối (`if: always()`).
+- **Lưu APK làm artifact** của run (`actions/upload-artifact`, giữ 14 ngày). Có artifact thì khi Firebase lỗi vẫn tải được bản đã build.
+
+### 12.3. Cấu hình & secret
+
+**Không bí mật → commit trong `cd.yml`** (`env:` của từng job): App ID (`1:<số>:android:<hash>`) và alias nhóm tester chỉ là định danh. App ID đã nằm sẵn trong mọi APK có SDK Firebase; không có service account thì không làm được gì.
+
+| Job | `FIREBASE_APP_ID` | `FIREBASE_GROUPS` |
+|---|---|---|
+| `distribute-qa` | App ID của `com.khangtm.pokepoke.qa` trong `pokepoke2026`: `1:477109968891:android:a2888a4fc232aa4c26355e` | `qa` |
+| `distribute-prod` | App ID của `com.khangtm.pokepoke` trong `pokepoke2026-prod`: `1:702504399810:android:b4dada09372e4efd8d1c5b` | `prod` |
+
+`FIREBASE_GROUPS` là **alias** của nhóm (Firebase → App Distribution → Testers & Groups → tên nhóm → alias), không phải tên hiển thị.
+
+**Bí mật → GitHub → Settings → Environments.** Mỗi Environment có bộ giá trị riêng nhưng **cùng tên**, nên workflow không phải phân nhánh theo môi trường.
+
+| Secret | `qa` | `prod` |
+|---|---|---|
+| `FIREBASE_SERVICE_ACCOUNT` | JSON key của service account `github-cd` thuộc `pokepoke2026` | JSON key của service account `github-cd` thuộc `pokepoke2026-prod` |
+| `RELEASE_KEYSTORE_BASE64` | — | `base64 -i configs/signing/release.keystore` |
+| `RELEASE_PROPERTIES` | — | nội dung `configs/signing/release.properties` |
+| `ENV_SECRETS_TOML` (secret của repo, đã có, §4b) | dùng chung | dùng chung |
+
+- **Environment `prod`:** bật *Required reviewers* (user) và *Deployment branches and tags* chỉ cho tag `v*`.
+- **Environment `qa`:** chỉ cho branch `release/*` (*Selected branches and tags* → luật Branch `release/*`). Bản qa luôn build từ branch release, không build từ `main`; chạy tay từ `main` sẽ bị Environment từ chối.
+- **Service account riêng `github-cd`, chỉ có role Firebase App Distribution Admin** (Google Cloud Console → IAM & Admin → Service accounts), mỗi project một cái. Tạo key JSON, dán vào secret, rồi **xoá file key ở máy**.
+- **Không dùng `firebase-adminsdk-…`:** service account này có quyền quản trị toàn bộ Firebase (Auth, Firestore, Storage, cấu hình...). Lộ key thì mất cả project. CD chỉ cần quyền phát bản.
+- **Không bao giờ commit hay in ra** JSON key, keystore, mật khẩu (CLAUDE.md).
+
+### 12.4. Việc user làm tay (một lần, trước khi workflow chạy được)
+
+1. ✅ **Firebase Console:** tạo 2 project `pokepoke2026` (qa) và `pokepoke2026-prod`.
+2. ✅ **Thêm Android app vào mỗi project** (package và SHA theo bảng 12.1). Ghi **App ID** vào bảng 12.3.
+3. **App Distribution** (mỗi project):
+   - Mở *Get started*.
+   - ✅ Tab *Testers & Groups*: nhóm `qa` (project qa) / `prod` (project prod), có email tester.
+4. **Google Cloud Console** (mỗi project): tạo service account `github-cd`, role *Firebase App Distribution Admin*, tạo key JSON.
+5. **GitHub → Settings → Environments:**
+   - ✅ Tạo `qa` và `prod`, thêm secret theo bảng 12.3.
+   - `prod`: bật Required reviewers và giới hạn tag `v*`.
+6. **Xoá file key JSON ở máy** sau khi đã dán vào secret.
+7. **Chạy thử:** tạo `release/v1.0` từ `main` (§12.5), rồi Actions → CD → *Run workflow* → branch `release/v1.0`, `env = qa`; hoặc merge một PR bump version vào branch đó. Tester nhận email mời và cài bằng app *Firebase App Tester*.
+
+### 12.5. Quy trình release (branch `release/vX.Y`)
+
+```
+main ──●──●──●───────────────────────●(merge về)──●──
+            \                        /
+   release/v1.2 ●bump──●fix──●fix──●bump──●tag v1.2.0
+                 │qa                │qa    │prod (user duyệt)
+```
+
+| Việc | Branch / PR | Ai làm | Build |
+|---|---|---|---|
+| **Cắt release** | tạo `release/vX.Y` từ `main` (GitHub UI hoặc `git push origin main:refs/heads/release/vX.Y`) | user | — |
+| **Bump version** | branch `bump/vX.Y.Z-<versionCode>` từ `release/vX.Y`, chỉ sửa `version.properties`; PR vào `release/vX.Y` | agent hoặc user | qa |
+| **Fix bug của bản release** | branch `fix/<slug>` từ `release/vX.Y`, PR vào `release/vX.Y` (1 commit, như task) | agent | — |
+| **Phát prod** | `git tag vX.Y.Z <commit trên release/vX.Y> && git push origin vX.Y.Z` | user | prod |
+| **Đưa fix về `main`** (lúc nào cũng được, nên làm sớm để ít conflict) | branch `merge/release-vX.Y-<ngày>` tạo từ `release/vX.Y` rồi `git merge origin/main` (giải conflict ở đây); PR vào `main` | agent hoặc user | — |
+
+- **Version chỉ đổi trên `release/*`:**
+  - Không bump version trên `main`. `main` nhận version mới qua lần merge release về, và release sau cắt từ `main` thì bump tiếp.
+  - Hai branch không cùng sửa `version.properties` nên khi merge về hầu như không conflict ở file này.
+- **Không mở PR thẳng `release/vX.Y` → `main`, phải đi qua branch `merge/...`.**
+  - Ruleset bắt PR phải cập nhật theo base (strict). Sau khi cắt release, `main` thường đã có commit mới, nên PR thẳng sẽ báo *out-of-date*.
+  - Muốn hết báo thì phải merge `main` vào `release/vX.Y`: bằng nút *Update branch*, hoặc giải conflict trên web. Làm vậy là đẩy code chưa test vào release, và ruleset cũng cấm push thẳng vào `release/**`, nên bị kẹt.
+  - Branch `merge/...` nhận `main` thay cho release: release giữ nguyên, conflict được giải ở đó.
+  - Chỉ khi `main` chưa có commit mới kể từ lần đồng bộ trước thì PR thẳng mới merge được; trường hợp này hiếm nên không dùng.
+- **PR merge về `main` chứa nhiều commit**, gồm các fix và bump. Đây là ngoại lệ duy nhất của luật "mỗi PR một commit" (CLAUDE.md). Commit merge vẫn tạo một bong bóng trên `main`.
+- **Ruleset `protect-main` áp dụng cho cả `release/**`** (§10): bắt buộc PR, check `build` xanh, cấm push thẳng, force push và xoá branch.
